@@ -1,0 +1,1422 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Đào tạo PVNEXT — Slide HTML tương tác &amp; Số hóa RACI trong kiểm soát tuân thủ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Sora:wght@500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pvep-blue:#0083C7; --pvep-green:#00B050; --pvep-navy:#0A2A4A;
+  --ink-900:#1E293B; --ink-700:#334155; --ink-600:#475569; --ink-500:#64748B;
+  --bg-100:#F1F5F9; --white:#FFFFFF;
+  --danger:#DC2626; --warning:#EA580C; --caution:#D97706; --success:#15803D; --info:#1D4ED8;
+  --claude:#D97757;
+  --font-display:"Sora", system-ui, sans-serif;
+  --font-body:"Be Vietnam Pro", system-ui, sans-serif;
+  --ac-accent:#0083C7; --ac-accent-2:#00B050;
+  --ac-track:rgba(10,42,74,.10); --ac-line:rgba(10,42,74,.14);
+  --ac-ease:cubic-bezier(.22,.8,.18,1); --ac-ease-bounce:cubic-bezier(.34,1.56,.64,1);
+  --ac-dur:.8s; --ac-stagger:80ms;
+  --rail:264px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+html, body{ height:100%; overflow-x:hidden; }
+html{ scroll-snap-type:y mandatory; scroll-behavior:smooth; }
+.slide{ width:100vw; height:100vh; height:100dvh; overflow:hidden; scroll-snap-align:start; display:flex; flex-direction:column; position:relative; }
+.slide-content{ flex:1; display:flex; flex-direction:column; justify-content:center; max-height:100%; overflow:hidden; padding:var(--slide-padding); position:relative; z-index:3; }
+:root{
+  --title-size:clamp(1.8rem, 6vh, 4rem); --h2-size:clamp(1.5rem, 4.5vh, 3rem);
+  --body-size:clamp(1.05rem, 2.8vh, 1.875rem); --small-size:clamp(0.85rem, 2.2vh, 1.5rem);
+  --slide-padding:clamp(1.2rem, 4.5vh, 4.5rem); --content-gap:clamp(0.8rem, 2.5vh, 2.5rem);
+}
+img{ max-width:100%; }
+@media (max-height:700px){ :root{ --slide-padding:clamp(0.75rem,3vw,2rem); --title-size:clamp(1.25rem,4.5vw,2.5rem); --h2-size:clamp(1rem,3vw,1.75rem); } }
+@media (max-height:600px){ :root{ --slide-padding:clamp(0.5rem,2.5vw,1.5rem); --title-size:clamp(1.1rem,4vw,2rem); --body-size:clamp(0.7rem,1.2vw,0.95rem); } }
+@media (max-width:600px){ :root{ --title-size:clamp(1.25rem,7vw,2.5rem); } }
+
+/* LIVE BACKGROUNDS */
+.slide__bg{ position:absolute; inset:0; z-index:0; overflow:hidden; }
+.slide__bg::before{ content:""; position:absolute; inset:-6%; background-image:var(--bg); background-size:cover; background-position:center; animation:kenburns 22s ease-in-out infinite alternate; will-change:transform; }
+.slide__bg::after{ content:""; position:absolute; inset:0; background:
+  radial-gradient(1100px 760px at 82% -12%, rgba(0,131,199,.16), transparent 60%),
+  radial-gradient(940px 680px at -8% 112%, rgba(0,176,80,.14), transparent 55%),
+  linear-gradient(180deg, rgba(255,255,255,.60) 0%, rgba(244,248,251,.90) 44%, rgba(236,242,248,.96) 100%); }
+.slide__bg--alt::before{ animation-direction:alternate-reverse; animation-duration:26s; }
+@keyframes kenburns{ 0%{transform:scale(1.05) translate(0,0)} 100%{transform:scale(1.16) translate(-2%,-2%)} }
+.slide--dark .slide__bg::after{ background:
+  radial-gradient(900px 600px at 78% 12%, rgba(0,131,199,.30), transparent 60%),
+  linear-gradient(180deg, rgba(6,20,36,.52) 0%, rgba(7,24,42,.74) 55%, rgba(6,20,36,.90) 100%); }
+.slide__video{ position:absolute; inset:0; z-index:0; overflow:hidden; }
+.slide__video video{ position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+.slide__video::after{ content:""; position:absolute; inset:0; background:
+  radial-gradient(900px 620px at 76% 16%, rgba(0,131,199,.34), transparent 58%),
+  linear-gradient(180deg, rgba(6,20,36,.48) 0%, rgba(7,24,42,.70) 55%, rgba(5,18,34,.88) 100%); }
+.amb{ position:absolute; inset:0; z-index:1; pointer-events:none; overflow:hidden; }
+.amb span{ position:absolute; border-radius:50%; filter:blur(46px); opacity:.45; }
+.amb .o1{ width:300px;height:300px; background:radial-gradient(circle,rgba(0,131,199,.55),transparent 70%); top:-60px; right:8%; animation:drift 20s ease-in-out infinite alternate; }
+.amb .o2{ width:340px;height:340px; background:radial-gradient(circle,rgba(0,176,80,.45),transparent 70%); bottom:-90px; left:4%; animation:drift 26s ease-in-out infinite alternate-reverse; }
+@keyframes drift{ 0%{transform:translate(0,0) scale(1)} 100%{transform:translate(5%,-4%) scale(1.12)} }
+
+/* ANIMATION CORE */
+.ac-reveal{ opacity:0; } .ac-reveal--up{ transform:translateY(28px); } .ac-reveal--down{ transform:translateY(-28px); }
+.ac-reveal--left{ transform:translateX(-32px); } .ac-reveal--right{ transform:translateX(32px); } .ac-reveal--zoom{ transform:scale(.86); }
+.ac-on .ac-reveal{ animation:ac-fade-up var(--ac-dur) var(--ac-ease) both; animation-delay:calc(var(--i,0)*var(--ac-stagger) + var(--ac-delay,0ms)); }
+.ac-on .ac-reveal--left,.ac-on .ac-reveal--right{ animation-name:ac-fade-x; }
+.ac-on .ac-reveal--down{ animation-name:ac-fade-down; }
+.ac-on .ac-reveal--zoom{ animation-name:ac-zoom-in; animation-timing-function:var(--ac-ease-bounce); }
+@keyframes ac-fade-up{ from{opacity:0;transform:translateY(28px)} to{opacity:1;transform:none} }
+@keyframes ac-fade-down{ from{opacity:0;transform:translateY(-28px)} to{opacity:1;transform:none} }
+@keyframes ac-fade-x{ from{opacity:0} to{opacity:1;transform:none} }
+@keyframes ac-zoom-in{ from{opacity:0;transform:scale(.86)} to{opacity:1;transform:scale(1)} }
+.ac-pop{ opacity:0; transform:scale(.4); }
+.ac-on .ac-pop{ animation:ac-pop var(--ac-dur) var(--ac-ease-bounce) both; animation-delay:calc(var(--i,0)*var(--ac-stagger) + var(--ac-delay,0ms)); }
+@keyframes ac-pop{ from{opacity:0;transform:scale(.4)} to{opacity:1;transform:scale(1)} }
+.ac-fill-x{ width:0; transition:width 1.1s var(--ac-ease); transition-delay:calc(var(--i,0)*var(--ac-stagger)); }
+.ac-on .ac-fill-x{ width:var(--w); }
+.ac-ring-val{ stroke-dasharray:var(--circ); stroke-dashoffset:var(--circ); transition:stroke-dashoffset 1.3s var(--ac-ease); transition-delay:calc(var(--i,0)*var(--ac-stagger)); }
+.ac-on .ac-ring-val{ stroke-dashoffset:calc(var(--circ)*(1 - var(--p))); }
+.ac-float{ animation:ac-float 6s ease-in-out infinite; } @keyframes ac-float{ 0%,100%{transform:translateY(0)} 50%{transform:translateY(-12px)} }
+.ac-spin{ animation:ac-spin 18s linear infinite; transform-origin:center; } @keyframes ac-spin{ to{ transform:rotate(360deg) } }
+.ac-spin-fast{ animation:ac-spin 6s linear infinite; transform-origin:center; }
+.ac-pulse{ animation:ac-pulse 2.4s ease-in-out infinite; } @keyframes ac-pulse{ 0%,100%{transform:scale(1);opacity:1} 50%{transform:scale(1.06);opacity:.86} }
+.ac-caret{ border-right:.08em solid var(--pvep-blue); animation:ac-blink 1s steps(1) infinite; } @keyframes ac-blink{ 50%{ border-color:transparent } }
+@media (prefers-reduced-motion:reduce){
+  .ac-reveal,.ac-pop{ opacity:1!important; transform:none!important; }
+  .ac-fill-x{ width:var(--w)!important; } .ac-ring-val{ stroke-dashoffset:calc(var(--circ)*(1 - var(--p)))!important; }
+  .slide__bg::before,.amb span,.ac-float,.ac-spin,.ac-spin-fast,.ac-pulse,.ac-caret{ animation:none!important; }
+  *{ transition-duration:.001s!important; }
+}
+
+/* GLOBAL */
+body{ font-family:var(--font-body); color:var(--ink-600); background:linear-gradient(135deg,#FFFFFF 0%, #EEF3F8 100%); -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility; }
+.wrap{ width:min(95%, 1650px); margin-inline:auto; position:relative; z-index:3; }
+.wrap--wide{ width:min(98%, 1850px); }
+@media (min-width:1000px){ .slide-content{ padding-left:calc(var(--slide-padding) + var(--rail)); } }
+.head-center{ text-align:center; display:flex; flex-direction:column; gap:.45rem; align-items:center; margin-bottom:clamp(.6rem,2.2vh,1.4rem); }
+.eyebrow{ font-family:var(--font-display); font-weight:700; letter-spacing:.2em; text-transform:uppercase; color:var(--pvep-blue); font-size:clamp(.62rem,1vw,.82rem); }
+.s-title{ font-family:var(--font-display); font-weight:800; color:var(--pvep-navy); font-size:clamp(1.4rem,3.6vw,2.7rem); line-height:1.08; letter-spacing:-.01em; }
+.s-title--sm{ font-size:clamp(1.2rem,2.8vw,2rem); }
+.neo{ color:var(--pvep-blue); } .neo-g{ color:var(--pvep-green); }
+.note{ font-size:clamp(.8rem,1.15vw,.98rem); color:var(--ink-600); text-align:center; max-width:84ch; margin:1rem auto 0; line-height:1.5; background:rgba(255,255,255,.62); border:1px solid var(--ac-line); border-radius:12px; padding:.6rem 1rem; backdrop-filter:blur(4px); }
+.note b{ color:var(--pvep-navy); }
+
+/* RAIL */
+.rail{ position:fixed; inset:0 auto 0 0; width:var(--rail); height:100vh; height:100dvh; z-index:50; display:flex; flex-direction:column; padding:1.4rem 1rem;
+  background:linear-gradient(180deg, rgba(255,255,255,.92), rgba(238,243,248,.90)); backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px); border-right:1px solid rgba(10,42,74,.10); }
+.rail__center{ flex:1; display:flex; flex-direction:column; justify-content:center; gap:clamp(1rem,4vh,2.2rem); }
+.rail__brand{ display:flex; align-items:center; gap:.6rem; }
+.rail__logo{ width:52px; height:52px; display:grid; place-content:center; }
+.rail__logo img{ width:100%; height:100%; object-fit:contain; filter:drop-shadow(0 1px 3px rgba(10,42,74,.18)); }
+.rail__title{ font-family:var(--font-display); font-weight:800; color:var(--pvep-navy); font-size:1rem; line-height:1; }
+.rail__sub{ font-size:.56rem; color:var(--ink-500); text-transform:uppercase; letter-spacing:.14em; margin-top:.28rem; }
+.rail__nav{ display:flex; flex-direction:column; gap:.18rem; }
+body.on-dark .rail{ background:linear-gradient(180deg, rgba(8,24,42,.46), rgba(7,22,40,.30)); border-right-color:rgba(255,255,255,.12); }
+body.on-dark .rail__logo img{ filter:drop-shadow(0 2px 6px rgba(0,0,0,.55)); }
+body.on-dark .rail__title{ color:#fff; } body.on-dark .rail__sub{ color:#bcd4e6; }
+body.on-dark .rail__item{ color:#cfe1ef; } body.on-dark .rail__item:hover{ color:#fff; background:rgba(255,255,255,.08); }
+body.on-dark .rail__item.is-active{ color:#fff; background:rgba(92,200,255,.18); }
+body.on-dark .rail__item.is-active .dot{ background:#5cc8ff; box-shadow:0 0 0 4px rgba(92,200,255,.22); }
+body.on-dark .rail__item.is-active .rail__num{ color:#5cc8ff; } body.on-dark .rail__num{ color:#9fc4dc; }
+body.on-dark .rail__foot{ color:#9fc4dc; border-top-color:rgba(255,255,255,.14); }
+body.on-dark .counter{ background:rgba(8,24,42,.5); color:#fff; border-color:rgba(255,255,255,.2); }
+body.on-dark .counter #cur{ color:#5cc8ff; } body.on-dark .hint{ color:#bcd4e6; }
+.rail,.counter,.hint{ transition:background .5s var(--ac-ease), color .5s var(--ac-ease); }
+.rail__item{ display:flex; gap:.55rem; align-items:center; padding:.55rem .55rem; border-radius:10px; cursor:pointer; color:var(--ink-500); font-size:.76rem; font-weight:600; line-height:1.2; transition:color .25s, background .25s; }
+.rail__item .dot{ width:7px; height:7px; border-radius:50%; background:var(--ac-track); flex:none; transition:background .25s, box-shadow .25s; }
+.rail__num{ font-family:var(--font-display); font-weight:700; opacity:.45; font-size:.7rem; min-width:1.1em; }
+.rail__item:hover{ color:var(--ink-700); background:rgba(0,131,199,.06); }
+.rail__item.is-active{ color:var(--pvep-blue); background:rgba(0,131,199,.10); }
+.rail__item.is-active .dot{ background:var(--pvep-blue); box-shadow:0 0 0 4px rgba(0,131,199,.16); }
+.rail__item.is-active .rail__num{ opacity:1; color:var(--pvep-blue); }
+.rail__foot{ font-size:.58rem; color:var(--ink-500); line-height:1.5; border-top:1px solid var(--ac-line); padding-top:.7rem; }
+@media (max-width:999px){ .rail{ display:none; } }
+.counter{ position:fixed; top:1.05rem; right:1.4rem; z-index:60; font-family:var(--font-display); font-weight:700; color:var(--pvep-navy); font-size:.95rem; background:rgba(255,255,255,.78); padding:.32rem .8rem; border-radius:999px; border:1px solid rgba(10,42,74,.12); backdrop-filter:blur(6px); }
+.counter #cur{ color:var(--pvep-blue); } .counter .sep{ opacity:.4; margin:0 .18rem; }
+.progress{ position:fixed; top:0; left:0; height:3px; width:100%; z-index:61; }
+.progress__fill{ height:100%; width:0; background:linear-gradient(90deg,var(--pvep-blue),var(--pvep-green)); transition:width .45s var(--ac-ease); }
+.hint{ position:fixed; bottom:.9rem; right:1.4rem; z-index:55; font-size:.66rem; color:var(--ink-500); }
+@media (max-width:999px){ .hint{ display:none; } }
+
+/* SHARED */
+.chip{ display:inline-flex; align-items:center; gap:.4rem; padding:.34rem .8rem; border-radius:999px; font-family:var(--font-display); font-weight:700; font-size:clamp(.66rem,1.1vw,.82rem); }
+.chip--blue{ background:rgba(0,131,199,.14); color:var(--pvep-blue); } .chip--green{ background:rgba(0,176,80,.14); color:var(--success); }
+.chip--navy{ background:rgba(10,42,74,.12); color:var(--pvep-navy); } .chip--light{ background:rgba(255,255,255,.18); color:#eaf4fb; border:1px solid rgba(255,255,255,.28); }
+.grid3{ display:grid; grid-template-columns:repeat(3,1fr); gap:clamp(.7rem,1.6vw,1.3rem); }
+.grid2{ display:grid; grid-template-columns:repeat(2,1fr); gap:clamp(.8rem,1.8vw,1.5rem); }
+@media (max-width:900px){ .grid3,.grid2{ grid-template-columns:1fr; } }
+.card2{ background:rgba(255,255,255,.86); border:1px solid var(--ac-line); border-radius:16px; padding:clamp(1rem,2.2vh,1.6rem); box-shadow:0 14px 34px rgba(10,42,74,.10); backdrop-filter:blur(6px); position:relative; overflow:hidden; }
+.card2 h4{ font-family:var(--font-display); font-weight:800; color:var(--pvep-navy); font-size:clamp(1rem,1.6vw,1.32rem); margin-bottom:.4rem; line-height:1.15; }
+.card2 p{ font-size:clamp(.85rem,1.3vw,1.05rem); color:var(--ink-600); line-height:1.45; }
+.card2 .ic{ width:48px; height:48px; border-radius:13px; display:grid; place-content:center; margin-bottom:.7rem; color:#fff; position:relative; }
+.ic--blue{ background:linear-gradient(135deg,var(--pvep-blue),#2aa3df); } .ic--green{ background:linear-gradient(135deg,var(--pvep-green),#34c878); } .ic--navy{ background:linear-gradient(135deg,var(--pvep-navy),#1c4a78); }
+.card2 .ic svg{ width:27px; height:27px; }
+.card2 .ic::after{ content:""; position:absolute; inset:-5px; border-radius:16px; border:2px solid currentColor; opacity:.25; animation:ac-pulse 3s ease-in-out infinite; }
+
+/* HERO */
+.hero{ text-align:center; display:flex; flex-direction:column; align-items:center; gap:clamp(.6rem,2vh,1.3rem); color:#eef6fc; }
+.hero__badge{ display:flex; align-items:center; gap:.7rem; }
+.hero__logo{ width:64px; height:64px; display:grid; place-content:center; }
+.hero__logo img{ width:100%;height:100%;object-fit:contain; filter:drop-shadow(0 3px 10px rgba(0,0,0,.55)); }
+.hero__h1{ font-family:var(--font-display); font-weight:800; color:#fff; font-size:clamp(2rem,5.2vw,3.9rem); line-height:1.06; letter-spacing:-.02em; text-shadow:0 6px 28px rgba(0,0,0,.40); }
+.hero__h1 .neo{ color:#5cc8ff; } .hero__h1 .neo-g{ color:#5ce39a; }
+.hero__line{ width:min(560px,80%); height:3px; border-radius:3px; background:linear-gradient(90deg,transparent,#5cc8ff,#5ce39a,transparent); }
+.hero__credit{ font-family:var(--font-display); font-weight:700; font-size:clamp(1rem,1.8vw,1.4rem); color:#eaf4fb; text-shadow:0 2px 14px rgba(0,0,0,.45); }
+.hero__credit b{ color:#fff; }
+.hero__meta{ display:flex; flex-wrap:wrap; gap:.6rem; justify-content:center; margin-top:.3rem; }
+
+/* SESSIONS schedule */
+.sessions{ display:grid; grid-template-columns:repeat(2,1fr); gap:clamp(.9rem,2vw,1.6rem); max-width:1250px; margin-inline:auto; width:100%; }
+.sess{ background:rgba(255,255,255,.90); border:1px solid var(--ac-line); border-radius:18px; padding:1.1rem 1.2rem 1.3rem; box-shadow:0 16px 38px rgba(10,42,74,.12); backdrop-filter:blur(6px); position:relative; overflow:hidden; }
+.sess::before{ content:""; position:absolute; inset:0 auto 0 0; width:6px; }
+.sess--1::before{ background:linear-gradient(180deg,var(--pvep-blue),#2aa3df); } .sess--2::before{ background:linear-gradient(180deg,var(--pvep-green),#34c878); }
+.sess__tag{ display:inline-flex; align-items:center; gap:.5rem; font-family:var(--font-display); font-weight:800; font-size:.72rem; letter-spacing:.06em; padding:.3rem .7rem; border-radius:999px; margin-bottom:.55rem; }
+.sess--1 .sess__tag{ background:rgba(0,131,199,.14); color:var(--pvep-blue); } .sess--2 .sess__tag{ background:rgba(0,176,80,.14); color:var(--success); }
+.sess__h{ font-family:var(--font-display); font-weight:800; color:var(--pvep-navy); font-size:clamp(1.02rem,1.6vw,1.32rem); line-height:1.18; margin-bottom:.2rem; }
+.sess__sub{ font-size:clamp(.78rem,1.1vw,.95rem); color:var(--ink-500); margin-bottom:.7rem; }
+.sess__row{ display:grid; grid-template-columns:96px 1fr; gap:.6rem; align-items:start; padding:.4rem 0; border-top:1px dashed var(--ac-line); }
+.sess__row:first-of-type{ border-top:none; }
+.sess__t{ font-family:var(--font-display); font-weight:700; color:var(--pvep-blue); font-size:clamp(.78rem,1.1vw,.96rem); }
+.sess--2 .sess__t{ color:var(--success); }
+.sess__d{ font-size:clamp(.82rem,1.15vw,1rem); color:var(--ink-700); line-height:1.35; }
+@media (max-width:860px){ .sessions{ grid-template-columns:1fr; } }
+
+/* SURVEY / MENTI EMBED */
+.menti{ max-width:1240px; margin-inline:auto; width:100%; display:flex; flex-direction:column; gap:.8rem; }
+.menti__frame{ position:relative; width:100%; aspect-ratio:16/9; max-height:60vh; border-radius:16px; overflow:hidden; border:1px solid var(--ac-line); box-shadow:0 22px 52px rgba(10,42,74,.20); background:#fff; }
+.menti__frame iframe{ position:absolute; inset:0; width:100%; height:100%; border:0; }
+.menti__bottom{ display:flex; align-items:center; gap:1rem; flex-wrap:wrap; justify-content:center; }
+.menti__qr{ display:flex; align-items:center; gap:.7rem; background:rgba(255,255,255,.9); border:1px solid var(--ac-line); border-radius:14px; padding:.55rem .8rem; box-shadow:0 10px 24px rgba(10,42,74,.10); }
+.menti__qr img{ width:78px; height:78px; border-radius:8px; }
+.menti__qr small{ font-size:clamp(.72rem,1vw,.88rem); color:var(--ink-600); line-height:1.4; max-width:24ch; }
+.menti__qr small b{ color:var(--pvep-navy); }
+.menti__cta{ display:inline-flex; align-items:center; gap:.5rem; text-decoration:none; background:linear-gradient(135deg,var(--pvep-blue),var(--pvep-green)); color:#fff; font-family:var(--font-display); font-weight:700; font-size:clamp(.84rem,1.2vw,1.02rem); padding:.7rem 1.3rem; border-radius:12px; box-shadow:0 12px 26px rgba(0,131,199,.30); }
+.menti__pills{ display:flex; flex-wrap:wrap; gap:.45rem; justify-content:center; }
+.menti__pill{ font-size:clamp(.7rem,1vw,.88rem); padding:.3rem .7rem; border-radius:999px; background:rgba(255,255,255,.82); border:1px solid var(--ac-line); color:var(--ink-700); font-weight:600; }
+
+/* TIERS */
+.tiers{ display:grid; grid-template-columns:repeat(3,1fr); gap:clamp(.8rem,1.8vw,1.5rem); align-items:end; max-width:1280px; margin-inline:auto; width:100%; }
+.tier{ position:relative; border-radius:18px; padding:1.2rem 1.1rem 1.3rem; background:rgba(255,255,255,.90); border:1px solid var(--ac-line); box-shadow:0 16px 38px rgba(10,42,74,.12); backdrop-filter:blur(6px); overflow:hidden; }
+.tier__lv{ position:absolute; top:0; right:0; font-family:var(--font-display); font-weight:800; font-size:clamp(2.6rem,5vw,4rem); line-height:1; color:rgba(10,42,74,.07); padding:.2rem .6rem; }
+.tier__badge{ display:inline-flex; align-items:center; gap:.45rem; font-family:var(--font-display); font-weight:800; font-size:.72rem; letter-spacing:.08em; padding:.28rem .7rem; border-radius:999px; margin-bottom:.7rem; }
+.tier__tool{ font-family:var(--font-display); font-weight:800; color:var(--pvep-navy); font-size:clamp(1.15rem,2vw,1.6rem); line-height:1.1; margin-bottom:.5rem; }
+.tier__when{ font-size:clamp(.84rem,1.2vw,1.02rem); color:var(--ink-600); line-height:1.45; }
+.tier__cost{ display:inline-block; margin-top:.7rem; font-size:clamp(.72rem,1vw,.88rem); font-weight:700; padding:.24rem .6rem; border-radius:8px; }
+.tier .brandic{ width:52px;height:52px;border-radius:14px;display:grid;place-content:center;margin-bottom:.6rem; }
+.tier .brandic svg{ width:30px; height:30px; }
+.tier--1{ transform:translateY(36px); } .tier--2{ transform:translateY(18px); }
+.tier--1 .tier__badge{ background:rgba(66,133,244,.14); color:#1a73e8; } .tier--1 .brandic{ background:#fff; box-shadow:0 6px 16px rgba(10,42,74,.12);} .tier--1 .tier__cost{ background:rgba(0,176,80,.14); color:var(--success); }
+.tier--2 .tier__badge{ background:rgba(124,58,237,.14); color:#7c3aed; } .tier--2 .brandic{ background:linear-gradient(135deg,#7c3aed,#a855f7); color:#fff; } .tier--2 .tier__cost{ background:rgba(217,119,6,.16); color:var(--caution); }
+.tier--3{ background:linear-gradient(160deg,var(--pvep-navy),#143a60); border-color:transparent; box-shadow:0 22px 50px rgba(10,42,74,.34); }
+.tier--3 .tier__lv{ color:rgba(255,255,255,.12); } .tier--3 .tier__tool{ color:#fff; } .tier--3 .tier__when{ color:#cfe2ef; }
+.tier--3 .tier__badge{ background:rgba(217,119,87,.26); color:#ffb599; } .tier--3 .brandic{ background:var(--claude); color:#fff; } .tier--3 .tier__cost{ background:rgba(255,255,255,.16); color:#d7ecf8; }
+.tier--3::after{ content:""; position:absolute; inset:0; border-radius:18px; box-shadow:inset 0 0 0 1.5px rgba(217,119,87,.40); animation:ac-pulse 3s ease-in-out infinite; pointer-events:none; }
+.tier__star{ position:absolute; top:.7rem; left:.9rem; color:#ffd24a; }
+@media (max-width:900px){ .tiers{ grid-template-columns:1fr; align-items:stretch; } .tier--1,.tier--2{ transform:none; } }
+
+/* CLAUDE VARIANTS (slide 8) */
+.cvar{ display:grid; grid-template-columns:repeat(3,1fr); gap:clamp(.8rem,1.8vw,1.4rem); max-width:1280px; margin-inline:auto; width:100%; }
+.cv{ position:relative; border-radius:18px; padding:1.2rem 1.2rem 1.3rem; background:rgba(255,255,255,.90); border:1px solid var(--ac-line); box-shadow:0 16px 38px rgba(10,42,74,.12); backdrop-filter:blur(6px); overflow:hidden; }
+.cv__ic{ width:54px;height:54px;border-radius:14px;display:grid;place-content:center;color:#fff;margin-bottom:.7rem; background:var(--claude); position:relative; }
+.cv__ic svg{ width:32px;height:32px; }
+.cv__ic::after{ content:""; position:absolute; inset:-6px; border-radius:18px; border:2px solid var(--claude); opacity:.3; animation:ac-pulse 3s ease-in-out infinite; }
+.cv__tag{ font-family:var(--font-display); font-weight:800; font-size:.68rem; letter-spacing:.08em; color:var(--claude); margin-bottom:.2rem; }
+.cv h4{ font-family:var(--font-display); font-weight:800; color:var(--pvep-navy); font-size:clamp(1.05rem,1.7vw,1.4rem); margin-bottom:.4rem; }
+.cv p{ font-size:clamp(.83rem,1.2vw,1.02rem); color:var(--ink-600); line-height:1.45; }
+.cv__lv{ position:absolute; top:.4rem; right:.7rem; font-family:var(--font-display); font-weight:800; font-size:2.4rem; color:rgba(217,119,87,.10); }
+.cv--hot{ background:linear-gradient(160deg,#2a1a12,#3a2417); border-color:transparent; }
+.cv--hot h4{ color:#fff; } .cv--hot p{ color:#e9d6cb; } .cv--hot .cv__tag{ color:#ffb599; } .cv--hot .cv__ic{ background:linear-gradient(135deg,var(--claude),#e8916b); }
+@media (max-width:900px){ .cvar{ grid-template-columns:1fr; } }
+
+/* STEPS */
+.steps5{ width:100%; max-width:1220px; margin-inline:auto; }
+.s5-track{ height:7px; border-radius:7px; background:var(--ac-track); position:relative; margin-bottom:1.2rem; overflow:hidden; }
+.s5-fill{ position:absolute; inset:0 auto 0 0; height:100%; border-radius:7px; background:linear-gradient(90deg,var(--pvep-blue),var(--pvep-green)); }
+.s5-fill::after{ content:""; position:absolute; right:0; top:50%; width:14px; height:14px; margin-top:-7px; border-radius:50%; background:#fff; box-shadow:0 0 0 4px rgba(0,176,80,.4); }
+.s5{ display:grid; grid-template-columns:repeat(5,1fr); gap:.8rem; }
+.s5__step{ background:rgba(255,255,255,.88); border:1px solid var(--ac-line); border-radius:14px; padding:.9rem .7rem; text-align:center; box-shadow:0 10px 24px rgba(10,42,74,.08); backdrop-filter:blur(5px); }
+.s5__step b{ display:grid; place-content:center; width:40px; height:40px; margin:0 auto .5rem; border-radius:50%; background:rgba(0,131,199,.12); color:var(--pvep-blue); font-family:var(--font-display); font-weight:800; }
+.s5__step span{ font-size:clamp(.74rem,1.1vw,.95rem); color:var(--ink-700); font-weight:600; line-height:1.25; }
+.s5__step--hot{ background:linear-gradient(135deg,var(--pvep-navy),#143a60); border-color:transparent; }
+.s5__step--hot b{ background:rgba(255,255,255,.18); color:#fff; } .s5__step--hot span{ color:#fff; }
+@media (max-width:900px){ .s5{ grid-template-columns:repeat(2,1fr); } }
+
+/* PROMPT */
+.prompt{ background:linear-gradient(160deg,#0A2A4A,#0d345c); border-radius:16px; padding:clamp(1rem,2.4vh,1.7rem); box-shadow:0 22px 50px rgba(10,42,74,.34); max-width:1100px; margin-inline:auto; width:100%; }
+.prompt__bar{ display:flex; align-items:center; gap:.5rem; margin-bottom:.9rem; } .prompt__bar span{ width:11px; height:11px; border-radius:50%; }
+.prompt__tag{ margin-left:auto; border-radius:6px; background:rgba(255,255,255,.12); color:#cfe6f5; font-family:var(--font-display); font-weight:700; font-size:.66rem; letter-spacing:.14em; padding:.2rem .6rem; }
+.prompt__body{ font-family:"SFMono-Regular",Consolas,monospace; color:#e6f1f8; font-size:clamp(.78rem,1.25vw,1.02rem); line-height:1.8; }
+.prompt__body .ln{ display:block; } .prompt__body .k{ color:#7fd1ff; font-weight:700; } .prompt__body .g{ color:#74e39b; }
+
+/* ANATOMY */
+.anat{ display:grid; grid-template-columns:1.1fr 1fr; gap:clamp(1rem,2.4vw,2rem); align-items:center; max-width:1300px; margin-inline:auto; width:100%; }
+.anat__win{ background:rgba(255,255,255,.92); border:1px solid var(--ac-line); border-radius:14px; overflow:hidden; box-shadow:0 22px 50px rgba(10,42,74,.16); }
+.anat__bar{ display:flex; align-items:center; gap:.4rem; padding:.55rem .8rem; background:#f6f9fc; border-bottom:1px solid var(--ac-line); }
+.anat__bar i{ width:10px;height:10px;border-radius:50%; } .anat__bar small{ margin-left:.6rem; color:var(--ink-500); font-size:.74rem; }
+.anat__stage{ padding:1rem; display:flex; flex-direction:column; gap:.5rem; }
+.anat__layer{ border-radius:10px; padding:.6rem .8rem; font-weight:700; font-family:var(--font-display); font-size:clamp(.74rem,1.1vw,.95rem); display:flex; align-items:center; gap:.5rem; }
+.anat__layer .tag{ font-size:.6rem; letter-spacing:.1em; padding:.12rem .45rem; border-radius:5px; background:rgba(10,42,74,.08); color:var(--ink-500); font-weight:700; margin-left:auto; }
+.l-rail{ background:rgba(0,131,199,.12); color:var(--pvep-blue); } .l-slide{ background:rgba(0,176,80,.12); color:var(--success); }
+.l-anim{ background:rgba(29,78,216,.12); color:var(--info); } .l-js{ background:rgba(217,119,6,.12); color:var(--caution); }
+.anat__list{ display:flex; flex-direction:column; gap:.7rem; }
+.anat__item{ display:flex; gap:.7rem; align-items:flex-start; }
+.anat__item b{ font-family:var(--font-display); color:var(--pvep-navy); font-size:clamp(.92rem,1.4vw,1.12rem); }
+.anat__item p{ font-size:clamp(.82rem,1.2vw,1rem); color:var(--ink-600); line-height:1.4; }
+.anat__num{ flex:none; width:30px; height:30px; border-radius:8px; background:rgba(0,131,199,.14); color:var(--pvep-blue); font-family:var(--font-display); font-weight:800; display:grid; place-content:center; font-size:.85rem; }
+@media (max-width:900px){ .anat{ grid-template-columns:1fr; } }
+.motif{ position:absolute; right:-6px; bottom:-6px; width:96px; height:96px; opacity:.16; }
+
+/* SKILLS */
+.skillrow{ display:grid; grid-template-columns:repeat(3,1fr); gap:clamp(.7rem,1.6vw,1.2rem); max-width:1280px; margin-inline:auto; width:100%; }
+.skillc{ background:rgba(255,255,255,.88); border:1px solid var(--ac-line); border-radius:14px; padding:1rem 1.1rem; box-shadow:0 10px 24px rgba(10,42,74,.08); backdrop-filter:blur(5px); }
+.skillc__h{ display:flex; align-items:center; gap:.6rem; margin-bottom:.45rem; }
+.skillc__h code{ font-family:var(--font-display); font-weight:800; color:var(--pvep-navy); font-size:clamp(.92rem,1.4vw,1.12rem); }
+.skillc p{ font-size:clamp(.8rem,1.15vw,.98rem); color:var(--ink-600); line-height:1.42; }
+.skill-ic{ width:40px;height:40px;border-radius:11px;display:grid;place-content:center;color:#fff;flex:none; }
+@media (max-width:900px){ .skillrow{ grid-template-columns:1fr; } }
+.checks{ display:grid; grid-template-columns:repeat(4,1fr); gap:.7rem 1rem; max-width:1200px; margin-inline:auto; width:100%; margin-top:1rem; }
+.check{ display:flex; gap:.6rem; align-items:flex-start; background:rgba(255,255,255,.86); border:1px solid var(--ac-line); border-radius:12px; padding:.65rem .8rem; box-shadow:0 8px 18px rgba(10,42,74,.06); backdrop-filter:blur(4px); }
+.check__tick{ flex:none; width:26px; height:26px; border-radius:7px; background:rgba(0,176,80,.16); color:var(--success); display:grid; place-content:center; font-weight:900; }
+.check b{ color:var(--pvep-navy); font-family:var(--font-display); font-size:clamp(.82rem,1.2vw,1rem); }
+.check span{ display:block; font-size:clamp(.72rem,1vw,.88rem); color:var(--ink-500); line-height:1.32; }
+@media (max-width:900px){ .checks{ grid-template-columns:1fr 1fr; } }
+
+/* STATS */
+.stats{ display:grid; grid-template-columns:repeat(4,1fr); gap:clamp(.7rem,1.6vw,1.2rem); max-width:1150px; margin-inline:auto; width:100%; }
+.stat{ background:rgba(255,255,255,.88); border:1px solid var(--ac-line); border-radius:16px; padding:1rem .8rem; text-align:center; box-shadow:0 12px 26px rgba(10,42,74,.10); backdrop-filter:blur(5px); }
+.gauge{ position:relative; width:120px; height:120px; margin:0 auto .4rem; } .gauge svg{ width:100%; height:100%; transform:rotate(-90deg); }
+.gauge__num{ position:absolute; inset:0; display:grid; place-content:center; font-family:var(--font-display); font-weight:800; color:var(--pvep-blue); font-size:clamp(1.5rem,2.8vw,2.1rem); }
+.stat span{ font-size:clamp(.74rem,1.1vw,.95rem); color:var(--ink-500); }
+@media (max-width:700px){ .stats{ grid-template-columns:repeat(2,1fr); } }
+
+/* RACI TABLE */
+.tblwrap{ background:rgba(255,255,255,.93); border:1px solid var(--ac-line); border-radius:14px; overflow:hidden; box-shadow:0 22px 50px rgba(10,42,74,.16); max-width:1300px; margin-inline:auto; width:100%; position:relative; }
+.tbl-bar{ display:flex; align-items:center; gap:.4rem; padding:.55rem .9rem; background:#f6f9fc; border-bottom:1px solid var(--ac-line); }
+.tbl-bar i{ width:10px;height:10px;border-radius:50%; } .tbl-bar small{ margin-left:.6rem; color:var(--ink-600); font-size:clamp(.72rem,1vw,.9rem); }
+table.raci{ width:100%; border-collapse:collapse; font-size:clamp(.7rem,1.05vw,.92rem); position:relative; }
+table.raci th, table.raci td{ padding:.5rem .55rem; border-bottom:1px solid var(--ac-line); text-align:center; }
+table.raci thead th{ background:var(--pvep-navy); color:#e7f1f8; font-family:var(--font-display); font-weight:700; font-size:clamp(.66rem,.95vw,.82rem); }
+table.raci .zoneB{ background:#13406a; }
+table.raci td.task{ text-align:left; color:var(--ink-700); font-weight:600; } table.raci td.stt{ color:var(--ink-500); font-weight:700; }
+.ac-on table.raci tbody tr{ animation:rowin .5s var(--ac-ease) both; }
+.ac-on table.raci tbody tr:nth-child(1){ animation-delay:.25s } .ac-on table.raci tbody tr:nth-child(2){ animation-delay:.45s }
+.ac-on table.raci tbody tr:nth-child(3){ animation-delay:.65s } .ac-on table.raci tbody tr:nth-child(4){ animation-delay:.85s }
+table.raci tbody tr{ opacity:0; } @keyframes rowin{ from{opacity:0;transform:translateX(-14px)} to{opacity:1;transform:none} }
+.rc{ display:inline-block; padding:.16rem .5rem; border-radius:6px; font-weight:700; font-size:clamp(.62rem,.9vw,.78rem); }
+.rc-r{ background:rgba(0,131,199,.18); color:var(--pvep-blue); } .rc-c{ background:rgba(217,119,6,.18); color:var(--caution); }
+.rc-a{ background:rgba(0,176,80,.20); color:var(--success); } .rc-i{ background:rgba(100,116,139,.18); color:var(--ink-500); }
+.legend{ display:flex; flex-wrap:wrap; gap:.7rem; justify-content:center; margin-top:.9rem; }
+.legend span{ display:inline-flex; align-items:center; gap:.4rem; font-size:clamp(.72rem,1vw,.9rem); color:var(--ink-700); background:rgba(255,255,255,.6); padding:.2rem .55rem; border-radius:8px; }
+
+/* COWORK */
+.cw{ display:grid; grid-template-columns:1fr auto 1fr auto 1fr; gap:.6rem; align-items:stretch; max-width:1300px; margin-inline:auto; width:100%; }
+.cwcol{ background:rgba(255,255,255,.90); border:1px solid var(--ac-line); border-radius:14px; padding:1rem; box-shadow:0 12px 28px rgba(10,42,74,.10); display:flex; flex-direction:column; gap:.6rem; backdrop-filter:blur(5px); }
+.cwcap{ display:flex; align-items:center; gap:.5rem; font-family:var(--font-display); font-weight:800; color:var(--pvep-navy); font-size:clamp(.84rem,1.2vw,1.05rem); }
+.cwcap b{ width:26px;height:26px;border-radius:7px;background:rgba(0,131,199,.16);color:var(--pvep-blue);display:grid;place-content:center;font-size:.82rem; }
+.cwfile{ background:rgba(0,131,199,.08); border:1px solid rgba(0,131,199,.20); border-radius:9px; padding:.5rem .7rem; font-weight:700; color:var(--pvep-navy); font-size:clamp(.76rem,1.1vw,.95rem); display:flex; justify-content:space-between; gap:.5rem; }
+.cwdocs{ display:flex; flex-wrap:wrap; gap:.35rem; } .cwdoc{ font-size:clamp(.66rem,.95vw,.8rem); padding:.22rem .5rem; border-radius:6px; background:rgba(10,42,74,.08); color:var(--ink-600); font-weight:600; }
+.cwlink{ position:relative; display:grid; place-content:center; color:var(--pvep-blue); font-size:1.5rem; font-weight:800; min-width:40px; overflow:hidden; }
+.cwlink .pkt{ position:absolute; left:0; top:50%; width:8px; height:8px; margin-top:-4px; border-radius:50%; background:var(--pvep-green); animation:travel 1.6s linear infinite; }
+@keyframes travel{ from{ left:-10px; opacity:0 } 15%{opacity:1} 85%{opacity:1} to{ left:110%; opacity:0 } }
+.cwengine{ background:linear-gradient(150deg,var(--pvep-navy),#143a60); border-color:transparent; align-items:center; justify-content:center; text-align:center; color:#fff; }
+.cwengine .cwcap{ color:#fff; } .cwengine .cwcap b{ background:rgba(255,255,255,.18); color:#fff; }
+.cwbrain{ width:64px;height:64px;border-radius:50%; background:rgba(255,255,255,.10); display:grid;place-content:center; color:#7fd1ff; margin:.3rem auto; position:relative; }
+.cwbrain svg{ width:34px;height:34px; }
+.cwbrain::after{ content:""; position:absolute; inset:-8px; border-radius:50%; border:2px solid rgba(127,209,255,.40); border-top-color:transparent; animation:ac-spin 3s linear infinite; }
+.cwstat{ font-size:clamp(.72rem,1vw,.88rem); color:#bfe0f2; }
+table.cwt{ width:100%; border-collapse:collapse; font-size:clamp(.68rem,1vw,.86rem); }
+table.cwt th{ text-align:left; color:var(--ink-500); font-weight:700; padding:.3rem .4rem; border-bottom:1px solid var(--ac-line); font-size:.74rem; }
+table.cwt td{ padding:.34rem .4rem; border-bottom:1px solid var(--ac-line); }
+table.cwt .ct{ color:var(--pvep-navy); font-weight:700; } table.cwt .cc{ color:var(--pvep-blue); font-family:monospace; font-size:.78rem; }
+@media (max-width:980px){ .cw{ grid-template-columns:1fr; } .cwlink{ transform:rotate(90deg); height:40px; } }
+
+/* BRAKES */
+.brakes{ display:grid; grid-template-columns:repeat(2,1fr); gap:clamp(.8rem,1.8vw,1.4rem); max-width:1150px; margin-inline:auto; width:100%; }
+.brake{ display:flex; gap:.8rem; align-items:flex-start; border-radius:14px; padding:1rem 1.1rem; backdrop-filter:blur(4px); }
+.brake__ic{ flex:none; width:46px; height:46px; border-radius:12px; display:grid; place-content:center; font-size:1.35rem; }
+.brake h4{ font-family:var(--font-display); font-weight:800; font-size:clamp(.98rem,1.5vw,1.24rem); margin-bottom:.25rem; }
+.brake p{ font-size:clamp(.82rem,1.2vw,1rem); line-height:1.45; }
+.brake--sec{ background:rgba(220,38,38,.10); border:1px solid rgba(220,38,38,.26); } .brake--sec .brake__ic{ background:rgba(220,38,38,.16); } .brake--sec h4{ color:var(--danger); }
+.brake--ctrl{ background:rgba(0,176,80,.10); border:1px solid rgba(0,176,80,.28); } .brake--ctrl .brake__ic{ background:rgba(0,176,80,.18); } .brake--ctrl h4{ color:var(--success); }
+@media (max-width:800px){ .brakes{ grid-template-columns:1fr; } }
+
+/* SEARCH APP */
+.app{ background:rgba(255,255,255,.95); border:1px solid var(--ac-line); border-radius:14px; overflow:hidden; box-shadow:0 24px 54px rgba(10,42,74,.18); max-width:1000px; margin-inline:auto; width:100%; }
+.app__bar{ display:flex; align-items:center; gap:.4rem; padding:.55rem .9rem; background:#f6f9fc; border-bottom:1px solid var(--ac-line); }
+.app__bar i{ width:10px;height:10px;border-radius:50%; } .app__bar small{ margin-left:.6rem; color:var(--ink-500); font-size:.76rem; }
+.app__search{ display:flex; gap:.5rem; padding:.9rem; }
+.app__box{ flex:1; border:1.5px solid var(--ac-line); border-radius:10px; padding:.65rem .9rem; font-family:var(--font-body); font-size:clamp(.84rem,1.2vw,1rem); color:var(--ink-900); outline:none; }
+.app__box:focus{ border-color:var(--pvep-blue); box-shadow:0 0 0 4px rgba(0,131,199,.14); }
+.app__btn{ border:none; cursor:pointer; border-radius:10px; padding:.65rem 1.2rem; background:linear-gradient(135deg,var(--pvep-blue),var(--pvep-green)); color:#fff; font-family:var(--font-display); font-weight:700; font-size:clamp(.82rem,1.2vw,1rem); }
+.app__res{ padding:0 .9rem 1rem; display:flex; flex-direction:column; gap:.5rem; max-height:44vh; overflow:auto; }
+.res{ border:1px solid var(--ac-line); border-radius:10px; padding:.6rem .8rem; animation:rowin .4s var(--ac-ease) both; }
+.res b{ color:var(--pvep-navy); font-family:var(--font-display); font-size:clamp(.84rem,1.2vw,1.02rem); }
+.res .meta{ display:flex; flex-wrap:wrap; gap:.4rem; margin-top:.35rem; }
+.res .meta span{ font-size:clamp(.66rem,.95vw,.8rem); padding:.18rem .5rem; border-radius:6px; background:rgba(0,131,199,.10); color:var(--pvep-blue); font-weight:600; }
+.res .meta span.law{ background:rgba(0,176,80,.12); color:var(--success); }
+.app__empty{ color:var(--ink-500); font-size:.9rem; padding:.4rem .2rem; }
+.hints{ display:flex; flex-wrap:wrap; gap:.6rem; justify-content:center; margin-top:1rem; }
+.hints span{ font-size:clamp(.74rem,1.1vw,.94rem); color:var(--ink-700); background:rgba(255,255,255,.78); border:1px solid var(--ac-line); border-radius:999px; padding:.34rem .8rem; }
+
+/* PRACTICE */
+.lab{ display:grid; grid-template-columns:repeat(2,1fr); gap:clamp(.9rem,2vw,1.6rem); max-width:1200px; margin-inline:auto; width:100%; }
+.labc{ background:rgba(255,255,255,.90); border:1px solid var(--ac-line); border-radius:16px; padding:1.2rem 1.3rem; box-shadow:0 14px 32px rgba(10,42,74,.10); backdrop-filter:blur(5px); }
+.labc__tag{ display:inline-block; font-family:var(--font-display); font-weight:800; font-size:.72rem; letter-spacing:.1em; padding:.22rem .6rem; border-radius:6px; margin-bottom:.6rem; }
+.labc--a .labc__tag{ background:rgba(0,131,199,.16); color:var(--pvep-blue); } .labc--b .labc__tag{ background:rgba(0,176,80,.16); color:var(--success); }
+.labc h4{ font-family:var(--font-display); font-weight:800; color:var(--pvep-navy); font-size:clamp(1.05rem,1.7vw,1.35rem); margin-bottom:.6rem; }
+.labc ol{ margin-left:1.1rem; display:flex; flex-direction:column; gap:.4rem; }
+.labc li{ font-size:clamp(.82rem,1.2vw,1.02rem); color:var(--ink-700); line-height:1.4; }
+@media (max-width:800px){ .lab{ grid-template-columns:1fr; } }
+
+/* DIVIDER */
+.divider{ text-align:center; display:flex; flex-direction:column; align-items:center; gap:1rem; position:relative; }
+.orbit{ position:relative; width:clamp(170px,24vh,260px); height:clamp(170px,24vh,260px); display:grid; place-content:center; }
+.orbit__ring{ position:absolute; inset:0; border-radius:50%; border:1.5px dashed rgba(0,131,199,.40); animation:ac-spin 24s linear infinite; }
+.orbit__ring.r2{ inset:16%; border-color:rgba(0,176,80,.45); animation-duration:16s; animation-direction:reverse; }
+.orbit__ring.r3{ inset:32%; border-style:solid; border-color:rgba(10,42,74,.16); animation-duration:30s; }
+.orbit__sat{ position:absolute; top:-6px; left:50%; width:14px; height:14px; margin-left:-7px; border-radius:50%; background:var(--pvep-blue); box-shadow:0 0 0 5px rgba(0,131,199,.18); }
+.orbit__no{ font-family:var(--font-display); font-weight:800; font-size:clamp(3rem,11vw,7rem); line-height:.9; background:linear-gradient(135deg,var(--pvep-blue),var(--pvep-green)); -webkit-background-clip:text; background-clip:text; color:transparent; }
+.divider__t{ font-family:var(--font-display); font-weight:800; color:var(--pvep-navy); font-size:clamp(1.5rem,4vw,2.9rem); line-height:1.08; }
+.divider__d{ font-size:var(--body-size); color:var(--ink-700); max-width:62ch; background:rgba(255,255,255,.6); border-radius:12px; padding:.5rem 1rem; }
+
+/* END */
+.end{ text-align:center; color:#eef6fc; }
+.end__lead{ font-size:clamp(1.05rem,2.2vw,1.7rem); color:#dbeaf5; text-shadow:0 2px 14px rgba(0,0,0,.4); } .end__lead .neo{ color:#5cc8ff; }
+.end__big{ font-family:var(--font-display); font-weight:800; color:#fff; font-size:clamp(1.8rem,5vw,3.6rem); line-height:1.06; margin:.6rem 0; text-shadow:0 6px 28px rgba(0,0,0,.45); }
+.end__thanks{ font-size:clamp(.86rem,1.3vw,1.1rem); color:#bcd4e6; margin-top:1rem; }
+@media (max-width:820px){ .slide{ height:100svh; min-height:100svh; } .slide-content{ padding-left:var(--slide-padding); padding-right:var(--slide-padding); } :root{ --title-size:clamp(1.5rem,7.5vw,2.6rem); --body-size:clamp(.92rem,4vw,1.18rem); } }
+
+/* ====== MOBILE PORTRAIT MODE ====== */
+@media (max-width:600px) and (orientation:portrait){
+  html{ scroll-snap-type:y mandatory; scroll-behavior:smooth; }
+  .slide{ width:100vw; height:100svh; min-height:100svh; overflow-y:auto; overflow-x:hidden; scroll-snap-align:start; }
+  .slide-content{ padding:clamp(.6rem,3vw,1.2rem); justify-content:flex-start; padding-top:2.8rem; }
+  :root{ --slide-padding:clamp(.5rem,3vw,1rem); --title-size:clamp(1.15rem,6vw,1.8rem); --h2-size:clamp(1rem,5vw,1.5rem); --body-size:clamp(.78rem,3.5vw,1rem); --small-size:clamp(.68rem,3vw,.88rem); }
+  .head-center{ margin-bottom:.6rem; gap:.25rem; }
+  .eyebrow{ font-size:clamp(.52rem,2.5vw,.68rem); letter-spacing:.12em; }
+  .s-title{ font-size:clamp(1.05rem,5.5vw,1.6rem); }
+  .note{ font-size:clamp(.68rem,2.8vw,.82rem); padding:.4rem .6rem; margin-top:.6rem; }
+  .counter{ top:.5rem; right:.5rem; font-size:.7rem; padding:.2rem .5rem; }
+  .hint{ display:none; }
+  .rail{ display:none; }
+  .progress{ height:2px; }
+  .amb .o1,.amb .o2{ transform:scale(.5); }
+  /* Cards & grids fit mobile */
+  .grid3,.grid2,.skillrow,.checks,.sessions,.cvar,.tiers,.brakes,.cw,.lab,.stats,.qa{ grid-template-columns:1fr!important; gap:.5rem!important; }
+  .card2,.skillc,.check,.sess,.tier,.cv,.brake,.labc,.stat{ padding:.7rem; }
+  .card2 h4,.skillc__h code,.sess__h{ font-size:clamp(.88rem,3.8vw,1.1rem); }
+  .card2 p,.skillc p,.sess__d,.tier__when,.cv p,.brake p{ font-size:clamp(.75rem,3.2vw,.92rem); }
+  .card2 .ic,.skill-ic{ width:34px; height:34px; } .card2 .ic svg,.skill-ic svg{ width:20px; height:20px; }
+  .card2 .ic::after{ display:none; }
+  /* Steps mobile */
+  .s5{ grid-template-columns:repeat(2,1fr)!important; gap:.4rem; }
+  .s5__step{ padding:.5rem .4rem; } .s5__step b{ width:30px; height:30px; font-size:.75rem; }
+  /* Prompt mobile */
+  .prompt{ padding:.7rem; } .prompt__body{ font-size:clamp(.68rem,2.8vw,.85rem); line-height:1.6; }
+  /* Hero mobile */
+  .hero__h1{ font-size:clamp(1.3rem,7vw,2rem); }
+  .hero__logo{ width:44px; height:44px; }
+  .hero__line{ width:80%; height:2px; }
+  .hero__credit{ font-size:clamp(.82rem,3.5vw,1.05rem); }
+  .chip{ font-size:clamp(.56rem,2.4vw,.7rem); padding:.22rem .5rem; }
+  /* Orbit / divider mobile */
+  .orbit{ width:120px; height:120px; }
+  .orbit__no{ font-size:clamp(2rem,10vw,3.5rem); }
+  .divider__t{ font-size:clamp(1.1rem,5.5vw,1.7rem); }
+  .divider__d{ font-size:clamp(.78rem,3.2vw,.95rem); }
+  /* Anatomy */
+  .anat{ grid-template-columns:1fr!important; }
+  /* Cowork */
+  .cw{ grid-template-columns:1fr!important; }
+  .cwlink{ transform:rotate(90deg); height:30px; }
+  /* Excel grid */
+  .xlgrid{ max-height:40vh; }
+  /* Search app */
+  .app__search{ flex-direction:column; } .app__box{ min-width:auto; }
+  /* Dashboard */
+  .dashframe{ height:45vh; }
+  /* Infographic mobile */
+  .ig-road__nodes{ grid-template-columns:1fr!important; gap:.6rem; }
+  .ig-road__track{ display:none; }
+  .ig-road__node{ padding:.7rem; }
+  .ig-road__node::before{ width:28px; height:28px; font-size:.75rem; top:-14px; }
+  .ig-vs__row{ grid-template-columns:1fr!important; gap:.4rem; }
+  .ig-vs__arrow{ margin:0 auto; width:36px; height:36px; font-size:.85rem; }
+  .ig-vs__conn{ height:10px; }
+  .ig-stair{ flex-direction:column!important; }
+  .ig-stair__col{ height:auto!important; border-radius:14px!important; border-bottom:1px solid var(--ac-line)!important; padding:.8rem!important; }
+  .ig-stair__track{ display:none; }
+  .ig-layers{ grid-template-columns:1fr!important; }
+  .ig-stack{ height:200px; margin-bottom:.5rem; }
+  .ig-slab{ width:clamp(140px,60%,220px)!important; height:clamp(36px,7vh,50px)!important; font-size:clamp(.65rem,2.8vw,.82rem)!important; }
+  .ig-desc__item{ gap:.5rem; }
+  .ig-desc__num{ width:28px; height:28px; font-size:.75rem; }
+}
+
+/* EXCEL INTERACTIVE GRID */
+.xlwin{ background:rgba(255,255,255,.96); border:1px solid var(--ac-line); border-radius:14px; overflow:hidden; box-shadow:0 22px 50px rgba(10,42,74,.18); max-width:1500px; margin-inline:auto; width:100%; }
+.xlbar{ display:flex; align-items:center; gap:.5rem; padding:.5rem .8rem; background:#107c41; color:#fff; }
+.xlbar .xi{ width:10px;height:10px;border-radius:50%; }
+.xlbar .xlname{ font-weight:700; font-size:clamp(.74rem,1vw,.92rem); display:flex; align-items:center; gap:.4rem; }
+.xlbar .xlname svg{ width:16px;height:16px; }
+.xltools{ display:flex; align-items:center; gap:.6rem; padding:.5rem .8rem; background:#f3f6f4; border-bottom:1px solid var(--ac-line); flex-wrap:wrap; }
+.xltools input{ flex:1; min-width:180px; border:1.5px solid var(--ac-line); border-radius:8px; padding:.45rem .7rem; font-family:var(--font-body); font-size:clamp(.8rem,1.1vw,.95rem); outline:none; }
+.xltools input:focus{ border-color:#107c41; box-shadow:0 0 0 3px rgba(16,124,65,.16); }
+.xltools .xlcount{ font-size:clamp(.72rem,1vw,.88rem); color:var(--ink-500); font-weight:600; }
+.xltools .xltabs{ display:flex; gap:.3rem; }
+.xltab{ font-size:.72rem; font-weight:700; padding:.26rem .6rem; border-radius:6px 6px 0 0; background:#e2e8e4; color:var(--ink-600); }
+.xltab.on{ background:#fff; color:#107c41; box-shadow:0 -2px 0 #107c41 inset; }
+.xlgrid{ max-height:54vh; overflow:auto; }
+table.xl{ border-collapse:separate; border-spacing:0; font-size:clamp(.66rem,.92vw,.82rem); width:max-content; min-width:100%; }
+table.xl th, table.xl td{ border-right:1px solid #e2e8f0; border-bottom:1px solid #e2e8f0; padding:.32rem .5rem; white-space:nowrap; background:#fff; }
+table.xl thead .colrow th{ position:sticky; top:0; z-index:6; background:#dbe7e0; color:#0f5132; font-weight:700; text-align:center; font-family:var(--font-display); font-size:.7rem; }
+table.xl thead .grprow th{ position:sticky; top:0; z-index:7; background:#107c41; color:#fff; font-weight:800; text-align:center; font-size:.66rem; letter-spacing:.04em; }
+table.xl thead .grprow th.g2{ background:#0a6b37; } table.xl thead .grprow th.gid{ background:#0d5c2f; }
+table.xl td.xlstt{ position:sticky; left:0; z-index:4; background:#f6faf8; color:var(--ink-500); font-weight:700; text-align:center; min-width:44px; }
+table.xl td.xlname{ position:sticky; left:44px; z-index:4; background:#fff; text-align:left; color:var(--ink-700); font-weight:600; max-width:330px; white-space:normal; min-width:240px; box-shadow:2px 0 0 #e2e8f0; }
+table.xl th.xlstt, table.xl th.xlname{ position:sticky; z-index:9; }
+table.xl th.xlstt{ left:0; } table.xl th.xlname{ left:44px; box-shadow:2px 0 0 rgba(255,255,255,.2); }
+table.xl tr.cat td{ background:#eef5f0; font-weight:800; color:#0f5132; }
+table.xl tr.cat td.xlstt{ background:#e3efe8; } table.xl tr.cat td.xlname{ background:#eef5f0; }
+table.xl td.v{ text-align:center; font-weight:700; min-width:62px; }
+.xv{ display:inline-block; padding:.1rem .42rem; border-radius:5px; font-size:.66rem; font-weight:700; }
+.xv-r{ background:rgba(0,131,199,.16); color:var(--pvep-blue); } .xv-c{ background:rgba(217,119,6,.18); color:var(--caution); }
+.xv-a{ background:rgba(0,176,80,.20); color:var(--success); } .xv-p{ background:rgba(124,58,237,.16); color:#7c3aed; }
+.xv-i{ background:rgba(100,116,139,.18); color:var(--ink-500); }
+.xlhint{ display:flex; gap:.5rem; align-items:center; padding:.5rem .8rem; background:#f3f6f4; border-top:1px solid var(--ac-line); font-size:clamp(.72rem,1vw,.88rem); color:var(--ink-600); }
+.xlhint b{ color:#0f5132; }
+
+/* DASHBOARD EMBED */
+.dashwrap{ background:#fff; border:1px solid var(--ac-line); border-radius:14px; overflow:hidden; box-shadow:0 22px 52px rgba(10,42,74,.20); max-width:1500px; margin-inline:auto; width:100%; }
+.dashbar{ display:flex; align-items:center; gap:.45rem; padding:.5rem .85rem; background:#f6f9fc; border-bottom:1px solid var(--ac-line); }
+.dashbar i{ width:10px;height:10px;border-radius:50%; } .dashbar small{ margin-left:.55rem; color:var(--ink-600); font-size:clamp(.72rem,1vw,.9rem); }
+.dashbar .open{ margin-left:auto; text-decoration:none; font-family:var(--font-display); font-weight:700; font-size:.74rem; color:var(--pvep-blue); padding:.2rem .55rem; border-radius:6px; background:rgba(0,131,199,.10); }
+.dashframe{ position:relative; width:100%; height:60vh; max-height:640px; }
+.dashframe iframe{ position:absolute; inset:0; width:100%; height:100%; border:0; }
+
+/* QA / SESSION WRAP */
+.qa{ display:grid; grid-template-columns:1.05fr .95fr; gap:clamp(1rem,2.4vw,2rem); align-items:center; max-width:1240px; margin-inline:auto; width:100%; }
+.qa__take{ display:flex; flex-direction:column; gap:.7rem; }
+.qa__item{ display:flex; gap:.7rem; align-items:flex-start; background:rgba(255,255,255,.88); border:1px solid var(--ac-line); border-radius:13px; padding:.8rem 1rem; box-shadow:0 10px 24px rgba(10,42,74,.08); backdrop-filter:blur(5px); }
+.qa__item .qic{ flex:none; width:38px;height:38px;border-radius:10px;display:grid;place-content:center;color:#fff; }
+.qa__item h4{ font-family:var(--font-display); font-weight:800; color:var(--pvep-navy); font-size:clamp(.95rem,1.45vw,1.18rem); margin-bottom:.15rem; }
+.qa__item p{ font-size:clamp(.8rem,1.15vw,.98rem); color:var(--ink-600); line-height:1.4; }
+.qa__avoid{ margin-top:.4rem; font-size:clamp(.76rem,1.05vw,.92rem); color:var(--ink-500); background:rgba(220,38,38,.07); border:1px solid rgba(220,38,38,.2); border-radius:10px; padding:.5rem .8rem; }
+.qa__avoid b{ color:var(--danger); }
+.qa__panel{ position:relative; border-radius:20px; padding:1.6rem 1.4rem; background:linear-gradient(160deg,var(--pvep-navy),#13406a); color:#fff; box-shadow:0 22px 50px rgba(10,42,74,.30); text-align:center; overflow:hidden; }
+.qa__panel .big{ font-family:var(--font-display); font-weight:800; font-size:clamp(2rem,4.4vw,3.4rem); line-height:1; letter-spacing:.02em; }
+.qa__panel .sub{ font-size:clamp(.9rem,1.4vw,1.12rem); color:#cfe2ef; margin-top:.6rem; }
+.qa__panel .ring{ position:absolute; width:240px;height:240px; border-radius:50%; border:2px dashed rgba(127,209,255,.35); top:-90px; right:-70px; animation:ac-spin 26s linear infinite; }
+.qa__panel .q{ position:absolute; font-family:var(--font-display); font-weight:800; opacity:.12; font-size:7rem; bottom:-2.4rem; left:-.5rem; }
+@media (max-width:860px){ .qa{ grid-template-columns:1fr; } }
+
+/* ====== INFOGRAPHIC: SLIDE 6 — HUB ====== */
+.ig-hub{ display:grid; grid-template-columns:1fr auto 1fr; gap:clamp(.6rem,1.6vw,1.2rem); align-items:center; max-width:1200px; margin-inline:auto; width:100%; }
+.ig-hub__center{ position:relative; width:clamp(110px,14vw,160px); height:clamp(110px,14vw,160px); border-radius:50%; background:linear-gradient(135deg,var(--pvep-blue),var(--pvep-green)); display:grid; place-content:center; color:#fff; font-family:var(--font-display); font-weight:800; font-size:clamp(1.1rem,2vw,1.6rem); box-shadow:0 0 40px rgba(0,131,199,.35),0 0 80px rgba(0,176,80,.15); z-index:2; }
+.ig-hub__center::before,.ig-hub__center::after{ content:""; position:absolute; border-radius:50%; border:2px dashed rgba(255,255,255,.35); }
+.ig-hub__center::before{ inset:-14px; animation:ac-spin 12s linear infinite; }
+.ig-hub__center::after{ inset:-28px; border-color:rgba(0,176,80,.3); animation:ac-spin 20s linear infinite reverse; }
+.ig-hub__col{ display:flex; flex-direction:column; gap:clamp(.7rem,1.6vw,1.2rem); }
+.ig-hub__card{ background:rgba(255,255,255,.9); border:1px solid var(--ac-line); border-radius:16px; padding:clamp(.8rem,1.6vh,1.3rem); box-shadow:0 14px 34px rgba(10,42,74,.10); backdrop-filter:blur(6px); position:relative; overflow:hidden; }
+.ig-hub__card h4{ font-family:var(--font-display); font-weight:800; color:var(--pvep-navy); font-size:clamp(.95rem,1.4vw,1.15rem); margin-bottom:.3rem; display:flex; align-items:center; gap:.5rem; }
+.ig-hub__card p{ font-size:clamp(.82rem,1.15vw,.98rem); color:var(--ink-600); line-height:1.4; }
+.ig-hub__card .ig-ic{ width:40px; height:40px; border-radius:11px; display:grid; place-content:center; color:#fff; flex:none; }
+.ig-hub__card::after{ content:""; position:absolute; top:0; left:0; width:4px; height:100%; }
+.ig-hub__card--blue::after{ background:linear-gradient(180deg,var(--pvep-blue),#2aa3df); }
+.ig-hub__card--green::after{ background:linear-gradient(180deg,var(--pvep-green),#34c878); }
+.ig-hub__card--navy::after{ background:linear-gradient(180deg,var(--pvep-navy),#1c4a78); }
+.ig-hub__lines{ position:absolute; inset:0; pointer-events:none; z-index:1; }
+.ig-hub__line{ fill:none; stroke-width:2.5; stroke-dasharray:8 6; opacity:.5; }
+.ac-on .ig-hub__line{ animation:ig-dash 1.8s linear infinite; }
+@keyframes ig-dash{ to{ stroke-dashoffset:-28; } }
+@media (max-width:900px){ .ig-hub{ grid-template-columns:1fr; } .ig-hub__center{ margin:0 auto 1rem; width:100px; height:100px; } .ig-hub__lines{ display:none; } }
+
+/* ====== INFOGRAPHIC: SLIDE 5 — ROADMAP TIMELINE ====== */
+.ig-road{ max-width:1200px; margin-inline:auto; width:100%; position:relative; }
+.ig-road__track{ position:relative; height:6px; border-radius:6px; background:var(--ac-track); margin:0 40px; }
+.ig-road__fill{ height:100%; border-radius:6px; background:linear-gradient(90deg,var(--pvep-blue),var(--pvep-green),var(--pvep-navy)); width:0; transition:width 1.4s var(--ac-ease); transition-delay:.3s; }
+.ac-on .ig-road__fill{ width:100%; }
+.ig-road__nodes{ display:grid; grid-template-columns:repeat(3,1fr); gap:clamp(.7rem,1.6vw,1.3rem); margin-top:clamp(1rem,2.5vh,1.8rem); }
+.ig-road__node{ background:rgba(255,255,255,.92); border:1px solid var(--ac-line); border-radius:16px; padding:clamp(.9rem,1.8vh,1.4rem); box-shadow:0 14px 34px rgba(10,42,74,.10); backdrop-filter:blur(6px); text-align:center; position:relative; }
+.ig-road__node::before{ content:attr(data-step); position:absolute; top:-18px; left:50%; transform:translateX(-50%); width:36px; height:36px; border-radius:50%; display:grid; place-content:center; font-family:var(--font-display); font-weight:800; font-size:.95rem; color:#fff; box-shadow:0 6px 18px rgba(10,42,74,.2); }
+.ig-road__node:nth-child(1)::before{ background:var(--pvep-blue); }
+.ig-road__node:nth-child(2)::before{ background:var(--pvep-green); }
+.ig-road__node:nth-child(3)::before{ background:var(--pvep-navy); }
+.ig-road__node .ig-road__ic{ width:48px; height:48px; border-radius:13px; display:grid; place-content:center; color:#fff; margin:clamp(.4rem,1vh,.8rem) auto; }
+.ig-road__node .ig-road__ic svg{ width:26px; height:26px; }
+.ig-road__node h4{ font-family:var(--font-display); font-weight:800; color:var(--pvep-navy); font-size:clamp(.95rem,1.4vw,1.15rem); margin-bottom:.3rem; }
+.ig-road__node p{ font-size:clamp(.82rem,1.15vw,.98rem); color:var(--ink-600); line-height:1.4; }
+@media (max-width:900px){ .ig-road__nodes{ grid-template-columns:1fr; } .ig-road__track{ display:none; } }
+
+/* ====== INFOGRAPHIC: SLIDE 6 — COMPARISON FLOW ====== */
+.ig-vs{ display:flex; flex-direction:column; gap:0; align-items:center; max-width:900px; margin-inline:auto; width:100%; }
+.ig-vs__row{ display:grid; grid-template-columns:1fr auto 1fr; gap:clamp(.6rem,1.4vw,1rem); align-items:center; width:100%; }
+.ig-vs__badge{ font-family:var(--font-display); font-weight:800; font-size:clamp(.68rem,1vw,.82rem); letter-spacing:.08em; text-transform:uppercase; padding:.3rem .8rem; border-radius:999px; text-align:center; white-space:nowrap; }
+.ig-vs__badge--ppt{ background:rgba(220,38,38,.12); color:var(--danger); }
+.ig-vs__badge--html{ background:rgba(0,131,199,.14); color:var(--pvep-blue); }
+.ig-vs__arrow{ width:50px; height:50px; border-radius:50%; background:linear-gradient(135deg,var(--pvep-blue),var(--pvep-green)); display:grid; place-content:center; color:#fff; font-weight:800; font-size:1.2rem; box-shadow:0 8px 22px rgba(0,131,199,.3); flex:none; position:relative; }
+.ig-vs__arrow::before,.ig-vs__arrow::after{ content:""; position:absolute; border-radius:50%; border:2px dashed rgba(0,131,199,.3); }
+.ig-vs__arrow::before{ inset:-8px; animation:ac-spin 8s linear infinite; }
+.ig-vs__arrow::after{ inset:-16px; border-color:rgba(0,176,80,.2); animation:ac-spin 14s linear infinite reverse; }
+.ig-vs__items{ display:flex; flex-direction:column; gap:clamp(.5rem,1vh,.8rem); }
+.ig-vs__item{ display:flex; gap:.6rem; align-items:flex-start; background:rgba(255,255,255,.92); border:1px solid var(--ac-line); border-radius:14px; padding:clamp(.7rem,1.4vh,1rem); box-shadow:0 10px 24px rgba(10,42,74,.08); backdrop-filter:blur(5px); position:relative; overflow:hidden; }
+.ig-vs__item::before{ content:""; position:absolute; top:0; left:0; width:4px; height:100%; }
+.ig-vs__item--blue::before{ background:var(--pvep-blue); }
+.ig-vs__item--green::before{ background:var(--pvep-green); }
+.ig-vs__item--navy::before{ background:var(--pvep-navy); }
+.ig-vs__item .ig-ic{ width:38px; height:38px; border-radius:10px; display:grid; place-content:center; color:#fff; flex:none; }
+.ig-vs__item h4{ font-family:var(--font-display); font-weight:800; color:var(--pvep-navy); font-size:clamp(.92rem,1.3vw,1.08rem); margin-bottom:.2rem; }
+.ig-vs__item p{ font-size:clamp(.8rem,1.1vw,.95rem); color:var(--ink-600); line-height:1.35; }
+.ig-vs__conn{ width:3px; height:clamp(14px,2vh,22px); background:linear-gradient(180deg,var(--pvep-blue),var(--pvep-green)); margin:0 auto; border-radius:3px; position:relative; overflow:hidden; }
+.ig-vs__conn::after{ content:""; position:absolute; inset:0; background:rgba(255,255,255,.6); animation:ig-pulse-line 1.4s ease-in-out infinite; }
+@keyframes ig-pulse-line{ 0%,100%{transform:translateY(-100%)} 50%{transform:translateY(100%)} }
+@media (max-width:700px){ .ig-vs__row{ grid-template-columns:1fr; gap:.5rem; } .ig-vs__arrow{ margin:0 auto; } .ig-vs__badge{ order:-1; } }
+
+/* ====== INFOGRAPHIC: SLIDE 7 — STAIRCASE ====== */
+.ig-stair{ display:flex; align-items:flex-end; gap:clamp(.8rem,1.6vw,1.4rem); max-width:1200px; margin-inline:auto; width:100%; position:relative; }
+.ig-stair__track{ position:absolute; bottom:0; left:0; right:0; height:6px; border-radius:6px; background:var(--ac-track); z-index:0; }
+.ig-stair__trackfill{ height:100%; border-radius:6px; background:linear-gradient(90deg,var(--pvep-blue),var(--pvep-green),var(--claude)); width:0; transition:width 1.6s var(--ac-ease); transition-delay:.3s; }
+.ac-on .ig-stair__trackfill{ width:100%; }
+.ig-stair__col{ flex:1; position:relative; z-index:2; border-radius:16px 16px 0 0; padding:clamp(1rem,2vh,1.5rem) clamp(.8rem,1.4vw,1.2rem); display:flex; flex-direction:column; border:1px solid var(--ac-line); border-bottom:4px solid transparent; box-shadow:0 -8px 28px rgba(10,42,74,.08); background:rgba(255,255,255,.92); backdrop-filter:blur(6px); }
+.ig-stair__col--a{ height:clamp(180px,26vh,240px); border-bottom-color:var(--pvep-blue); }
+.ig-stair__col--b{ height:clamp(240px,34vh,320px); border-bottom-color:var(--pvep-green); }
+.ig-stair__col--c{ height:clamp(300px,42vh,400px); background:linear-gradient(170deg,#0f172a,#1e293b); border-color:rgba(217,119,87,.4); border-bottom-color:var(--claude); box-shadow:0 -8px 36px rgba(217,119,87,.18); }
+.ig-stair__ic{ width:48px; height:48px; border-radius:13px; display:grid; place-content:center; color:#fff; margin-bottom:.8rem; flex:none; position:relative; }
+.ig-stair__ic svg{ width:26px; height:26px; }
+.ig-stair__ic--a{ background:var(--pvep-blue); }
+.ig-stair__ic--b{ background:var(--pvep-green); }
+.ig-stair__ic--c{ background:linear-gradient(135deg,var(--claude),#e8916b); box-shadow:0 0 18px rgba(217,119,87,.5); }
+.ig-stair__ic--c::after{ content:""; position:absolute; inset:-6px; border-radius:17px; border:2px dashed rgba(217,119,87,.7); animation:ac-spin 5s linear infinite; }
+.ig-stair__tag{ font-family:var(--font-display); font-weight:800; font-size:clamp(.58rem,.9vw,.72rem); letter-spacing:.1em; text-transform:uppercase; margin-bottom:.25rem; }
+.ig-stair__col--a .ig-stair__tag{ color:var(--pvep-blue); }
+.ig-stair__col--b .ig-stair__tag{ color:var(--success); }
+.ig-stair__col--c .ig-stair__tag{ color:#ffb599; }
+.ig-stair__col h4{ font-family:var(--font-display); font-weight:800; font-size:clamp(1rem,1.5vw,1.25rem); margin-bottom:.4rem; }
+.ig-stair__col--a h4,.ig-stair__col--b h4{ color:var(--pvep-navy); }
+.ig-stair__col--c h4{ color:#fff; }
+.ig-stair__col p{ font-size:clamp(.82rem,1.15vw,.98rem); line-height:1.42; }
+.ig-stair__col--a p,.ig-stair__col--b p{ color:var(--ink-600); }
+.ig-stair__col--c p{ color:#e0cfc5; }
+.ig-stair__star{ position:absolute; top:.7rem; right:.7rem; color:#ffd24a; }
+@media (max-width:900px){ .ig-stair{ flex-direction:column; align-items:stretch; } .ig-stair__col{ height:auto!important; border-radius:16px; border-bottom-width:1px; } .ig-stair__track{ display:none; } }
+
+/* ====== INFOGRAPHIC: SLIDE 9 — LAYERED STACK ====== */
+.ig-layers{ display:grid; grid-template-columns:1fr 1fr; gap:clamp(1rem,2.4vw,2rem); align-items:center; max-width:1300px; margin-inline:auto; width:100%; }
+.ig-stack{ position:relative; height:clamp(260px,40vh,380px); perspective:900px; }
+.ig-slab{ position:absolute; left:50%; width:clamp(200px,70%,320px); height:clamp(50px,8vh,70px); border-radius:12px; display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-weight:800; font-size:clamp(.8rem,1.2vw,1rem); letter-spacing:.04em; color:#fff; box-shadow:0 8px 20px rgba(0,0,0,.18); transform:translateX(-50%) rotateX(28deg) rotateZ(-6deg) translateY(40px); opacity:0; transition:all .9s var(--ac-ease-bounce); }
+.ig-slab--1{ background:linear-gradient(135deg,var(--pvep-blue),#2aa3df); top:5%; transition-delay:1.1s; }
+.ig-slab--2{ background:linear-gradient(135deg,var(--pvep-green),#34c878); top:28%; transition-delay:.85s; }
+.ig-slab--3{ background:linear-gradient(135deg,var(--info),#4f6fea); top:51%; transition-delay:.6s; }
+.ig-slab--4{ background:linear-gradient(135deg,var(--caution),#e8a12e); top:74%; transition-delay:.35s; }
+.ac-on .ig-slab{ opacity:1; transform:translateX(-50%) rotateX(28deg) rotateZ(-6deg) translateY(0); }
+.ig-desc{ display:flex; flex-direction:column; gap:clamp(.7rem,1.6vh,1.1rem); }
+.ig-desc__item{ display:flex; gap:.8rem; align-items:flex-start; }
+.ig-desc__num{ flex:none; width:34px; height:34px; border-radius:9px; display:grid; place-content:center; color:#fff; font-family:var(--font-display); font-weight:800; font-size:.9rem; }
+.ig-desc__item:nth-child(1) .ig-desc__num{ background:var(--pvep-blue); }
+.ig-desc__item:nth-child(2) .ig-desc__num{ background:var(--pvep-green); }
+.ig-desc__item:nth-child(3) .ig-desc__num{ background:var(--info); }
+.ig-desc__item:nth-child(4) .ig-desc__num{ background:var(--caution); }
+.ig-desc__item b{ font-family:var(--font-display); color:var(--pvep-navy); font-size:clamp(.92rem,1.3vw,1.08rem); }
+.ig-desc__item p{ font-size:clamp(.82rem,1.15vw,.98rem); color:var(--ink-600); line-height:1.4; }
+@media (max-width:900px){ .ig-layers{ grid-template-columns:1fr; } .ig-stack{ height:260px; margin-bottom:1rem; } }
+</style>
+<script src="assets/raci-grid.js"></script>
+</head>
+<body>
+<div class="progress"><div class="progress__fill" id="progressFill"></div></div>
+<div class="counter"><span id="cur">1</span><span class="sep">/</span><span id="tot">24</span></div>
+<div class="hint">← → di chuyển slide · click mục bên trái để nhảy chương</div>
+
+<nav class="rail" aria-label="Mục lục">
+  <div class="rail__center">
+    <div class="rail__brand">
+      <div class="rail__logo"><img src="assets/logo.png" alt="Logo Petrovietnam"></div>
+      <div>
+        <div class="rail__title">PVNEXT</div>
+        <div class="rail__sub">Đào tạo nội bộ · 2025</div>
+      </div>
+    </div>
+    <div class="rail__nav">
+      <div class="rail__item" data-chapter="0" data-target="0"><span class="dot"></span><span class="rail__num">01</span>Khai mạc &amp; lịch trình</div>
+      <div class="rail__item" data-chapter="1" data-target="3"><span class="dot"></span><span class="rail__num">02</span>Buổi 1 · Slide HTML</div>
+      <div class="rail__item" data-chapter="2" data-target="14"><span class="dot"></span><span class="rail__num">03</span>Buổi 2 · RACI số hóa</div>
+    </div>
+  </div>
+  <div class="rail__foot">Trình bày: Đoàn Thái Việt<br>Ban KSNB PVEP</div>
+</nav>
+
+<!-- ===== SLIDE 0 HERO ===== -->
+<section class="slide slide--dark" data-chapter="0">
+  <div class="slide__video"><video autoplay muted loop playsinline preload="auto"><source src="assets/offshore-motion.mp4" type="video/mp4"></video></div>
+  <div class="amb"><span class="o1"></span><span class="o2"></span></div>
+  <div class="slide-content"><div class="wrap">
+    <div class="hero">
+      <div class="hero__badge ac-reveal" style="--i:0">
+        <div class="hero__logo"><img src="assets/logo.png" alt="Logo Petrovietnam"></div>
+        <span class="chip chip--light">PETROVIETNAM-NEXT · 2025</span>
+      </div>
+      <h1 class="hero__h1 ac-reveal" style="--i:1">Slide HTML tương tác bằng <span class="neo">Claude</span><br>&amp; Số hóa <span class="neo-g">RACI</span> trong kiểm soát tuân thủ</h1>
+      <div class="hero__line ac-reveal" style="--i:2"></div>
+      <p class="hero__credit ac-reveal" style="--i:3">Trình bày: <b>Đoàn Thái Việt</b> — Ban KSNB PVEP · Petrovietnam-NEXT 2025</p>
+      <div class="hero__meta ac-reveal" style="--i:4">
+        <span class="chip chip--light">Buổi 1 · 22/6 · 17h–19h</span>
+        <span class="chip chip--light">Buổi 2 · 27/6 · 8h30–11h</span>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ===== SLIDE 1 LỊCH TRÌNH ===== -->
+<section class="slide" data-chapter="0">
+  <div class="slide__bg" style="--bg:url('assets/bg2.jpg')"></div>
+  <div class="amb"><span class="o1"></span><span class="o2"></span></div>
+  <div class="slide-content"><div class="wrap wrap--wide">
+    <div class="head-center">
+      <div class="eyebrow ac-reveal" style="--i:0">Hai buổi, hai ngày, hai chủ đề</div>
+      <h2 class="s-title ac-reveal" style="--i:1">Lịch trình <span class="neo">khóa đào tạo</span></h2>
+    </div>
+    <div class="sessions">
+      <div class="sess sess--1 ac-reveal ac-reveal--left" style="--i:2">
+        <span class="sess__tag">BUỔI 1 · NGÀY 22/6 · 17h–19h</span>
+        <div class="sess__h">Ứng dụng AI trong xây dựng bài trình chiếu HTML tương tác</div>
+        <div class="sess__sub">Học xong tự dựng được một deck HTML cho riêng mình</div>
+        <div class="sess__row"><div class="sess__t">17:00–17:20</div><div class="sess__d">Khởi động · khảo sát AI mọi người đang dùng · 3 cách dùng AI làm slide</div></div>
+        <div class="sess__row"><div class="sess__t">17:20–18:20</div><div class="sess__d">Bộ công cụ Claude · giải phẫu 1 deck · quy trình 5 bước · cách ra prompt · skill thiết kế</div></div>
+        <div class="sess__row"><div class="sess__t">18:20–19:00</div><div class="sess__d">Thực hành dựng mini-deck · tổng kết &amp; hỏi đáp</div></div>
+      </div>
+      <div class="sess sess--2 ac-reveal ac-reveal--right" style="--i:3">
+        <span class="sess__tag">BUỔI 2 · NGÀY 27/6 · 8h30–11h</span>
+        <div class="sess__h">Số hóa phân định trách nhiệm theo mô hình RACI trong kiểm soát tuân thủ</div>
+        <div class="sess__sub">Cách tự xây một bảng RACI số trên nền HTML cho quy trình của mình</div>
+        <div class="sess__row"><div class="sess__t">8:30–8:50</div><div class="sess__d">RACI dưới góc kiểm soát · cách xây một bảng RACI số</div></div>
+        <div class="sess__row"><div class="sess__t">8:50–10:10</div><div class="sess__d">3 bước: chuẩn hóa Excel → Cowork tổng hợp → xuất HTML tra cứu · hai phanh kiểm soát</div></div>
+        <div class="sess__row"><div class="sess__t">10:10–11:00</div><div class="sess__d">Thực hành RACI lookup · tổng kết &amp; hỏi đáp</div></div>
+      </div>
+    </div>
+    <p class="note ac-reveal" style="--i:4">Mỗi buổi độc lập, đều có phần <b>thực hành, tổng kết và hỏi đáp</b> riêng. Dùng chung một cách làm: mô tả cho AI, người giữ phần kiểm soát.</p>
+  </div></div>
+</section>
+
+<!-- ===== SLIDE 2 KHẢO SÁT MENTI ===== -->
+<section class="slide" data-chapter="0">
+  <div class="slide__bg slide__bg--alt" style="--bg:url('assets/bg1.jpg')"></div>
+  <div class="amb"><span class="o1"></span><span class="o2"></span></div>
+  <div class="slide-content"><div class="wrap wrap--wide">
+    <div class="head-center">
+      <div class="eyebrow ac-reveal" style="--i:0">Khởi động · trả lời ngay trên điện thoại</div>
+      <h2 class="s-title s-title--sm ac-reveal" style="--i:1">Anh/chị đang dùng <span class="neo">AI nào?</span></h2>
+    </div>
+    <div class="menti">
+      <div class="menti__frame ac-reveal ac-reveal--up" style="--i:2">
+        <iframe src="https://www.mentimeter.com/app/presentation/alqu5xfe6oo33kkprivhng91wq7psfqx/embed" allow="fullscreen" allowfullscreen title="Khảo sát Mentimeter trực tiếp"></iframe>
+      </div>
+      <div class="menti__bottom ac-reveal" style="--i:3">
+        <div class="menti__qr"><img src="assets/menti-qr.png" alt="QR Mentimeter"><small>Quét mã QR — hoặc mở <b>menti.com/al7p5rk2ncs4</b> trên điện thoại</small></div>
+        <a class="menti__cta" href="https://www.menti.com/al7p5rk2ncs4" target="_blank" rel="noopener">Vào bình chọn ↗</a>
+        <div class="menti__pills"><span class="menti__pill">ChatGPT</span><span class="menti__pill">Gemini</span><span class="menti__pill">Claude</span><span class="menti__pill">Copilot</span><span class="menti__pill">NotebookLM</span><span class="menti__pill">Chưa dùng</span></div>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ===== SLIDE 3 BUỔI 1 DIVIDER ===== -->
+<section class="slide" data-chapter="1">
+  <div class="slide__bg" style="--bg:url('assets/bg4.jpg')"></div>
+  <div class="amb"><span class="o1"></span><span class="o2"></span></div>
+  <div class="slide-content"><div class="wrap">
+    <div class="divider">
+      <div class="orbit ac-pop" style="--i:0">
+        <div class="orbit__ring"><span class="orbit__sat"></span></div>
+        <div class="orbit__ring r2"><span class="orbit__sat" style="background:var(--pvep-green);box-shadow:0 0 0 5px rgba(0,176,80,.2)"></span></div>
+        <div class="orbit__ring r3"></div>
+        <div class="orbit__no">01</div>
+      </div>
+      <div class="chip chip--blue ac-reveal" style="--i:1">BUỔI 1 · NGÀY 22/6 · 17h–19h</div>
+      <div class="divider__t ac-reveal" style="--i:2">Ứng dụng AI trong xây dựng<br>bài trình chiếu HTML tương tác</div>
+      <p class="divider__d ac-reveal" style="--i:3">Vì sao một file HTML đáng để thay PowerPoint trong nhiều tình huống — và cách bảo Claude làm hộ phần khó.</p>
+    </div>
+  </div></div>
+</section>
+
+<!-- ===== SLIDE 4 — 3 CÁCH DÙNG AI ===== -->
+<section class="slide" data-chapter="1">
+  <div class="slide__bg slide__bg--alt" style="--bg:url('assets/bg5.jpg')"></div>
+  <div class="amb"><span class="o1"></span><span class="o2"></span></div>
+  <div class="slide-content"><div class="wrap wrap--wide">
+    <div class="head-center">
+      <div class="eyebrow ac-reveal" style="--i:0">Cùng một việc — ba đẳng cấp công cụ</div>
+      <h2 class="s-title ac-reveal" style="--i:1">3 cách dùng AI để <span class="neo">làm slide</span></h2>
+    </div>
+    <div class="tiers">
+      <div class="tier tier--1 ac-reveal ac-reveal--up" style="--i:2">
+        <span class="tier__lv">1</span>
+        <span class="tier__badge">CẤP 1 · NHANH</span>
+        <div class="brandic ac-float"><svg viewBox="0 0 24 24" fill="none"><path d="M5 4h11l3 3v13H5z" fill="#fff" stroke="#5f6368" stroke-width="1.3"/><path d="M16 4v3h3" stroke="#5f6368" stroke-width="1.3" fill="none"/><rect x="7.5" y="10" width="9" height="1.6" rx=".8" fill="#4285F4"/><rect x="7.5" y="13" width="7" height="1.6" rx=".8" fill="#EA4335"/><rect x="7.5" y="16" width="8" height="1.6" rx=".8" fill="#FBBC05"/></svg></div>
+        <div class="tier__tool">Google NotebookLM</div>
+        <p class="tier__when">Cần nhanh, trẻ trung, hiện đại. Hợp khi gấp, không cầu kỳ nhận diện.</p>
+        <span class="tier__cost">Miễn phí</span>
+      </div>
+      <div class="tier tier--2 ac-reveal ac-reveal--up" style="--i:3">
+        <span class="tier__lv">2</span>
+        <span class="tier__badge">CẤP 2 · CHUẨN BRAND</span>
+        <div class="brandic ac-float" style="animation-delay:.4s"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 16l4-8 4 6 4-10 4 12"/><circle cx="8" cy="8" r="1.4" fill="currentColor" stroke="none"/></svg></div>
+        <div class="tier__tool">Moda.app</div>
+        <p class="tier__when">Cần đúng nhận diện thương hiệu Petrovietnam, màu sắc chuẩn.</p>
+        <span class="tier__cost">Tốn credit (token)</span>
+      </div>
+      <div class="tier tier--3 ac-reveal ac-reveal--up" style="--i:4">
+        <svg class="tier__star ac-pulse" width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.4H22l-6 4.5 2.3 7.1L12 16.7 5.7 21l2.3-7.1-6-4.5h7.6z"/></svg>
+        <span class="tier__lv">3</span>
+        <span class="tier__badge">CẤP 3 · CAO CẤP</span>
+        <div class="brandic ac-spin-fast"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1.6l1.9 7.3 7.1-2-5.2 5.1 5.2 5.1-7.1-2L12 22.4l-1.9-7.3-7.1 2 5.2-5.1L3 6.9l7.1 2z"/></svg></div>
+        <div class="tier__tool">Claude Code</div>
+        <p class="tier__when">Cần slide cao cấp, độc đáo, tùy biến sâu. Có thao tác gõ lệnh — chính là deck đang xem.</p>
+        <span class="tier__cost">Tùy biến không giới hạn</span>
+      </div>
+    </div>
+    <p class="note ac-reveal" style="--i:5">Chọn cấp độ theo nhu cầu, không phải cứ cao là tốt: gấp thì cấp 1, cần chuẩn brand thì cấp 2, cần đỉnh và riêng thì cấp 3. Buổi 1 đi sâu <b>cấp 3</b>.</p>
+  </div></div>
+</section>
+
+<!-- ===== SLIDE 5 — KẾT QUẢ BUỔI 1 ===== -->
+<section class="slide" data-chapter="1">
+  <div class="slide__bg" style="--bg:url('assets/bg3.jpg')"></div>
+  <div class="amb"><span class="o1"></span><span class="o2"></span></div>
+  <div class="slide-content"><div class="wrap">
+    <div class="head-center">
+      <div class="eyebrow ac-reveal" style="--i:0">Sau buổi 1 anh/chị làm được gì</div>
+      <h2 class="s-title ac-reveal" style="--i:1">Ba kết quả về <span class="neo">làm slide</span></h2>
+    </div>
+    <div class="ig-road">
+      <div class="ig-road__track"><div class="ig-road__fill"></div></div>
+      <div class="ig-road__nodes">
+        <div class="ig-road__node ac-reveal ac-reveal--up" style="--i:2" data-step="1">
+          <div class="ig-road__ic ic--blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 9h18M8 18v2M16 18v2"/></svg></div>
+          <h4>Tự dựng một deck HTML</h4>
+          <p>Một file slide có hiệu ứng, điều hướng, chạy trên mọi trình duyệt — làm bằng cách ra lệnh cho Claude, không cần code.</p>
+        </div>
+        <div class="ig-road__node ac-reveal ac-reveal--up" style="--i:3" data-step="2">
+          <div class="ig-road__ic ic--green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h10M4 17h7"/><circle cx="19" cy="15" r="3"/></svg></div>
+          <h4>Biết ra prompt &amp; gọi skill</h4>
+          <p>Mô tả đúng yêu cầu theo khung 5 phần, gọi skill thiết kế để deck đẹp và nhất quán thay vì mỗi slide một kiểu.</p>
+        </div>
+        <div class="ig-road__node ac-reveal ac-reveal--up" style="--i:4" data-step="3">
+          <div class="ig-road__ic ic--navy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 12a8 8 0 1 0 16 0 8 8 0 0 0-16 0z"/><path d="M2 12h4M18 12h4M12 2v4M12 18v4"/></svg></div>
+          <h4>Xuất một file &amp; chia sẻ</h4>
+          <p>Lưu một file HTML duy nhất, gửi email là dùng, chạy offline, mở được trên điện thoại — không cần license.</p>
+        </div>
+      </div>
+    </div>
+    <p class="note ac-reveal" style="--i:5">Buổi 2 (27/6) sẽ dùng đúng cách làm này cho một việc khác: <b>xây một bảng RACI số để tra cứu trách nhiệm</b>.</p>
+  </div></div>
+</section>
+
+<!-- ===== SLIDE 6 — VÌ SAO SLIDE HTML ===== -->
+<section class="slide" data-chapter="1">
+  <div class="slide__bg slide__bg--alt" style="--bg:url('assets/bg1.jpg')"></div>
+  <div class="amb"><span class="o1"></span><span class="o2"></span></div>
+  <div class="slide-content"><div class="wrap">
+    <div class="head-center">
+      <div class="eyebrow ac-reveal" style="--i:0">PowerPoint vẫn tốt — nhưng không phải lúc nào</div>
+      <h2 class="s-title ac-reveal" style="--i:1">Khi nào nên chọn <span class="neo">slide HTML</span></h2>
+    </div>
+    <div class="ig-vs">
+      <!-- Row 1 -->
+      <div class="ig-vs__row ac-reveal ac-reveal--up" style="--i:2">
+        <div class="ig-vs__items">
+          <div class="ig-vs__item ig-vs__item--blue">
+            <div class="ig-ic ic--blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 17l6-6 4 4 6-7"/><path d="M4 21h16"/></svg></div>
+            <div><h4>Hiệu ứng &amp; tương tác</h4><p>Số đếm động, biểu đồ, ô tra cứu gõ ra kết quả — những thứ PPT khó làm.</p></div>
+          </div>
+        </div>
+        <div class="ig-vs__arrow ac-pop" style="--i:2">VS</div>
+        <div style="display:flex;flex-direction:column;gap:.4rem;align-items:center">
+          <span class="ig-vs__badge ig-vs__badge--ppt">PowerPoint</span>
+          <span style="font-size:clamp(.78rem,1.1vw,.92rem);color:var(--ink-500)">Tĩnh, khó tương tác</span>
+        </div>
+      </div>
+      <div class="ig-vs__conn ac-reveal" style="--i:3"></div>
+      <!-- Row 2 -->
+      <div class="ig-vs__row ac-reveal ac-reveal--up" style="--i:3">
+        <div class="ig-vs__items">
+          <div class="ig-vs__item ig-vs__item--green">
+            <div class="ig-ic ic--green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg></div>
+            <div><h4>Gửi đi là chạy</h4><p>Một file, không cần cài đặt, không lệ thuộc phiên bản Office.</p></div>
+          </div>
+        </div>
+        <div style="width:50px;text-align:center;font-weight:800;color:var(--pvep-green);font-size:1.5rem">✓</div>
+        <div style="display:flex;flex-direction:column;gap:.4rem;align-items:center">
+          <span class="ig-vs__badge ig-vs__badge--html">HTML</span>
+          <span style="font-size:clamp(.78rem,1.1vw,.92rem);color:var(--ink-500)">Mở bằng browser là xem</span>
+        </div>
+      </div>
+      <div class="ig-vs__conn ac-reveal" style="--i:4"></div>
+      <!-- Row 3 -->
+      <div class="ig-vs__row ac-reveal ac-reveal--up" style="--i:4">
+        <div class="ig-vs__items">
+          <div class="ig-vs__item ig-vs__item--navy">
+            <div class="ig-ic ic--navy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2l2.4 7.4H22l-6 4.5 2.3 7.1L12 16.7 5.7 21l2.3-7.1-6-4.5h7.6z"/></svg></div>
+            <div><h4>Sửa nhanh bằng lời</h4><p>Đổi màu, đổi bố cục, thêm slide chỉ bằng một câu yêu cầu.</p></div>
+          </div>
+        </div>
+        <div style="width:50px;text-align:center;font-weight:800;color:var(--pvep-blue);font-size:1.5rem">✓</div>
+        <div style="display:flex;flex-direction:column;gap:.4rem;align-items:center">
+          <span class="ig-vs__badge ig-vs__badge--html">HTML</span>
+          <span style="font-size:clamp(.78rem,1.1vw,.92rem);color:var(--ink-500)">Nói lệnh, không kéo thả</span>
+        </div>
+      </div>
+    </div>
+    <p class="note ac-reveal" style="--i:5">Nguyên tắc chọn: báo cáo tĩnh, in ra giấy thì PowerPoint/Word vẫn ổn. Cần <b>tương tác, tra cứu, gửi rộng</b> thì HTML thắng.</p>
+  </div></div>
+</section>
+
+<!-- ===== SLIDE 7 — PHIÊN BẢN CLAUDE ===== -->
+<section class="slide" data-chapter="1">
+  <div class="slide__bg" style="--bg:url('assets/bg2.jpg')"></div>
+  <div class="amb"><span class="o1"></span><span class="o2"></span></div>
+  <div class="slide-content"><div class="wrap wrap--wide">
+    <div class="head-center">
+      <div class="eyebrow ac-reveal" style="--i:0">Cùng là Claude — ba cách dùng khác nhau</div>
+      <h2 class="s-title ac-reveal" style="--i:1">Phân biệt các <span class="neo">phiên bản Claude</span></h2>
+    </div>
+    <div class="ig-stair">
+      <div class="ig-stair__track"><div class="ig-stair__trackfill"></div></div>
+      <div class="ig-stair__col ig-stair__col--a ac-reveal ac-reveal--up" style="--i:2">
+        <div class="ig-stair__ic ig-stair__ic--a ac-float"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 5h16v11H8l-4 3z"/></svg></div>
+        <div class="ig-stair__tag">CLAUDE.AI · CHAT</div>
+        <h4>Trò chuyện</h4>
+        <p>Mô tả ý tưởng bằng lời, nhận lại nội dung và bản xem trước. Hợp để bắt đầu, soạn outline, hỏi nhanh.</p>
+      </div>
+      <div class="ig-stair__col ig-stair__col--b ac-reveal ac-reveal--up" style="--i:3">
+        <div class="ig-stair__ic ig-stair__ic--b ac-float" style="animation-delay:.4s"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7h18v12H3z"/><path d="M3 7l3-4h12l3 4M8 12h8"/></svg></div>
+        <div class="ig-stair__tag">CLAUDE COWORK · DESKTOP</div>
+        <h4>Làm trên file thật</h4>
+        <p>Cho Claude quyền đọc/ghi một thư mục trên máy. Đưa Excel vào, nhận HTML ra ngay trong thư mục đó. Đây là chế độ buổi học dùng.</p>
+      </div>
+      <div class="ig-stair__col ig-stair__col--c ac-reveal ac-reveal--up" style="--i:4">
+        <svg class="ig-stair__star ac-pulse" style="position:absolute;top:.7rem;right:.7rem;color:#ffd24a" width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.4 7.4H22l-6 4.5 2.3 7.1L12 16.7 5.7 21l2.3-7.1-6-4.5h7.6z"/></svg>
+        <div class="ig-stair__ic ig-stair__ic--c ac-spin-fast"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1.6l1.9 7.3 7.1-2-5.2 5.1 5.2 5.1-7.1-2L12 22.4l-1.9-7.3-7.1 2 5.2-5.1L3 6.9l7.1 2z"/></svg></div>
+        <div class="ig-stair__tag">CLAUDE CODE · CLI</div>
+        <h4>Gõ lệnh · cao cấp</h4>
+        <p>Tùy biến sâu nhất, dựng deck độc đáo và sản phẩm phức tạp. Cần thao tác dòng lệnh — chính là công cụ tạo ra deck này.</p>
+      </div>
+    </div>
+    <p class="note ac-reveal" style="--i:5">Với người mới: bắt đầu ở <b>Chat</b>, lên <b>Cowork</b> khi cần làm trên file thật, dùng <b>Claude Code</b> khi muốn tùy biến tới mức cao nhất.</p>
+  </div></div>
+</section>
+
+<!-- ===== SLIDE 8 — SKILL ===== -->
+<section class="slide" data-chapter="1">
+  <div class="slide__bg slide__bg--alt" style="--bg:url('assets/bg4.jpg')"></div>
+  <div class="amb"><span class="o1"></span><span class="o2"></span></div>
+  <div class="slide-content"><div class="wrap wrap--wide">
+    <div class="head-center">
+      <div class="eyebrow ac-reveal" style="--i:0">Ba skill nên gọi mỗi lần làm slide</div>
+      <h2 class="s-title ac-reveal" style="--i:1">Đẹp hơn, đúng chuẩn &amp; bớt <span class="neo">giọng máy</span></h2>
+    </div>
+    <div class="skillrow">
+      <div class="skillc ac-reveal ac-reveal--up" style="--i:2">
+        <div class="skillc__h"><span class="skill-ic ic--blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 2l7 4v6c0 4-3 7-7 8-4-1-7-4-7-8V6z"/></svg></span><code>ui-ux-pro-max</code></div>
+        <p>Bộ não thiết kế: chọn màu, font, khoảng cách, kiểu thẻ. Giúp deck nhất quán, chuyên nghiệp thay vì mỗi slide một kiểu.</p>
+      </div>
+      <div class="skillc ac-reveal ac-reveal--up" style="--i:3">
+        <div class="skillc__h"><span class="skill-ic ic--navy"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 9l-4 3 4 3M16 9l4 3-4 3M13 5l-2 14"/></svg></span><code>frontend-design</code></div>
+        <p>Dựng giao diện web hiện đại: layout, component, hiệu ứng, responsive chuẩn. Kết hợp với ui-ux-pro-max để deck trông như sản phẩm thật.</p>
+      </div>
+      <div class="skillc ac-reveal ac-reveal--up" style="--i:4">
+        <div class="skillc__h"><span class="skill-ic ic--green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h10M4 17h7"/></svg></span><code>humanizer</code></div>
+        <p>Rà câu chữ, bỏ dấu hiệu "văn AI": sáo rỗng, lặp ba ý, gạch đầu dòng máy móc. Lời trên slide nghe tự nhiên hơn.</p>
+      </div>
+    </div>
+    <div class="checks">
+      <div class="check ac-reveal ac-reveal--up" style="--i:5"><div class="check__tick">✓</div><div><b>Một file duy nhất</b><span>HTML + CSS + JS gộp chung</span></div></div>
+      <div class="check ac-reveal ac-reveal--up" style="--i:6"><div class="check__tick">✓</div><div><b>Chạy offline</b><span>Không cần internet hay cài đặt</span></div></div>
+      <div class="check ac-reveal ac-reveal--up" style="--i:7"><div class="check__tick">✓</div><div><b>Hợp mọi màn hình</b><span>Máy chiếu, laptop, điện thoại</span></div></div>
+      <div class="check ac-reveal ac-reveal--up" style="--i:8"><div class="check__tick">✓</div><div><b>Sửa lại dễ</b><span>Mở chat cũ, nói câu mới</span></div></div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ===== SLIDE 9 — GIẢI PHẪU ===== -->
+<section class="slide" data-chapter="1">
+  <div class="slide__bg" style="--bg:url('assets/bg3.jpg')"></div>
+  <div class="amb"><span class="o1"></span><span class="o2"></span></div>
+  <div class="slide-content"><div class="wrap wrap--wide">
+    <div class="head-center">
+      <div class="eyebrow ac-reveal" style="--i:0">Mở nắp xem bên trong</div>
+      <h2 class="s-title s-title--sm ac-reveal" style="--i:1">Một deck HTML gồm <span class="neo">4 lớp</span></h2>
+    </div>
+    <div class="ig-layers">
+      <div class="ig-stack">
+        <div class="ig-slab ig-slab--1">① THANH ĐIỀU HƯỚNG</div>
+        <div class="ig-slab ig-slab--2">② KHUNG SLIDE</div>
+        <div class="ig-slab ig-slab--3">③ HIỆU ỨNG</div>
+        <div class="ig-slab ig-slab--4">④ TƯƠNG TÁC JS</div>
+      </div>
+      <div class="ig-desc">
+        <div class="ig-desc__item ac-reveal ac-reveal--right" style="--i:3"><div class="ig-desc__num">1</div><div><b>Bố cục &amp; thương hiệu</b><p>Màu PVEP, font Sora + Be Vietnam Pro, thanh chương bên trái. Phần dùng lại được.</p></div></div>
+        <div class="ig-desc__item ac-reveal ac-reveal--right" style="--i:4"><div class="ig-desc__num">2</div><div><b>Khung trình chiếu</b><p>Mỗi slide chiếm trọn màn hình, cuộn tới đâu khớp tới đó. Phím mũi tên để chuyển.</p></div></div>
+        <div class="ig-desc__item ac-reveal ac-reveal--right" style="--i:5"><div class="ig-desc__num">3</div><div><b>Hiệu ứng</b><p>Chữ và thẻ trượt vào, số chạy lên. Tự tắt khi máy bật chế độ giảm chuyển động.</p></div></div>
+        <div class="ig-desc__item ac-reveal ac-reveal--right" style="--i:6"><div class="ig-desc__num">4</div><div><b>Tương tác</b><p>Phần "thông minh": ô tra cứu, lọc dữ liệu. Đây là chỗ slide HTML vượt PowerPoint.</p></div></div>
+      </div>
+    </div>
+    <p class="note ac-reveal" style="--i:8">Anh/chị không cần nhớ code của 4 lớp này. Chỉ cần biết chúng tồn tại để <b>mô tả đúng thứ mình muốn</b> cho Claude.</p>
+  </div></div>
+</section>
+
+<!-- ===== SLIDE 10 — QUY TRÌNH 5 BƯỚC ===== -->
+<section class="slide" data-chapter="1">
+  <div class="slide__bg slide__bg--alt" style="--bg:url('assets/bg5.jpg')"></div>
+  <div class="amb"><span class="o1"></span><span class="o2"></span></div>
+  <div class="slide-content"><div class="wrap">
+    <div class="head-center">
+      <div class="eyebrow ac-reveal" style="--i:0">Cách làm thực tế</div>
+      <h2 class="s-title ac-reveal" style="--i:1">Quy trình <span class="neo-g">5 bước</span> dựng một deck</h2>
+    </div>
+    <div class="steps5">
+      <div class="s5-track"><span class="s5-fill ac-fill-x" style="--w:100%"></span></div>
+      <div class="s5">
+        <div class="s5__step ac-pop" style="--i:2"><b>1</b><span>Viết outline nội dung trước</span></div>
+        <div class="s5__step ac-pop" style="--i:3"><b>2</b><span>Mô tả khung &amp; phong cách</span></div>
+        <div class="s5__step ac-pop" style="--i:4"><b>3</b><span>Để Claude dựng deck</span></div>
+        <div class="s5__step ac-pop" style="--i:5"><b>4</b><span>Xem &amp; chỉnh bằng lời</span></div>
+        <div class="s5__step s5__step--hot ac-pop" style="--i:6"><b>5</b><span>Lưu 1 file &amp; chia sẻ</span></div>
+      </div>
+    </div>
+    <p class="note ac-reveal" style="--i:7">Bước 1 là quan trọng nhất và là việc của <b>con người</b>: nội dung đúng, thứ tự hợp lý. Bốn bước sau Claude gánh phần lớn.</p>
+  </div></div>
+</section>
+
+<!-- ===== SLIDE 11 — PROMPT ===== -->
+<section class="slide" data-chapter="1">
+  <div class="slide__bg" style="--bg:url('assets/bg1.jpg')"></div>
+  <div class="amb"><span class="o1"></span><span class="o2"></span></div>
+  <div class="slide-content"><div class="wrap">
+    <div class="head-center">
+      <div class="eyebrow ac-reveal" style="--i:0">Ra lệnh sao cho trúng</div>
+      <h2 class="s-title s-title--sm ac-reveal" style="--i:1">Một prompt tốt có <span class="neo">5 phần</span></h2>
+    </div>
+    <div class="prompt ac-reveal ac-reveal--up" style="--i:2">
+      <div class="prompt__bar"><span style="background:#ff5f57"></span><span style="background:#febc2e"></span><span style="background:#28c840"></span><span class="prompt__tag">PROMPT MẪU</span></div>
+      <div class="prompt__body">
+        <span class="ln ac-reveal" style="--i:3"><span class="k">[Vai trò]</span> Bạn là chuyên gia làm slide trình bày cho lãnh đạo.</span>
+        <span class="ln ac-reveal" style="--i:4"><span class="k">[Bối cảnh]</span> Tôi cần deck báo cáo HĐTV về kết quả kiểm soát nội bộ Q2.</span>
+        <span class="ln ac-reveal" style="--i:5"><span class="k">[Nội dung]</span> Dùng outline tôi đính kèm — 8 slide, mỗi slide 1 ý chính.</span>
+        <span class="ln ac-reveal" style="--i:6"><span class="k">[Phong cách]</span> Slide HTML cuộn dọc, màu PVEP, font Sora; dùng skill <span class="g">ui-ux-pro-max</span>, <span class="g">frontend-design</span>, <span class="g">humanizer</span>.</span>
+        <span class="ln ac-reveal" style="--i:7"><span class="k">[Ràng buộc]</span> Xuất 1 file HTML duy nhất, chạy offline, có thanh điều hướng bên trái.<span class="ac-caret">&nbsp;</span></span>
+      </div>
+    </div>
+    <p class="note ac-reveal" style="--i:8">Mẹo: càng cụ thể về <b>ràng buộc</b> (1 file, offline, màu thương hiệu) thì càng ít phải sửa lại. Mơ hồ thì Claude phải đoán.</p>
+  </div></div>
+</section>
+
+<!-- ===== SLIDE 12 — THỰC HÀNH BUỔI 1 ===== -->
+<section class="slide" data-chapter="1">
+  <div class="slide__bg slide__bg--alt" style="--bg:url('assets/bg4.jpg')"></div>
+  <div class="amb"><span class="o1"></span><span class="o2"></span></div>
+  <div class="slide-content"><div class="wrap">
+    <div class="head-center">
+      <div class="eyebrow ac-reveal" style="--i:0">Thực hành buổi 1 · 30 phút</div>
+      <h2 class="s-title ac-reveal" style="--i:1">Tự dựng một <span class="neo">mini-deck 5 slide</span></h2>
+    </div>
+    <div class="lab" style="grid-template-columns:1fr">
+      <div class="labc labc--a ac-reveal ac-reveal--up" style="--i:2; max-width:760px; margin-inline:auto">
+        <span class="labc__tag">LÀM THEO 5 BƯỚC</span>
+        <h4>Mini-deck bằng Claude</h4>
+        <ol>
+          <li>Chọn một chủ đề báo cáo quen thuộc của phòng.</li>
+          <li>Viết outline 5 slide, mỗi slide một ý chính.</li>
+          <li>Dùng prompt 5 phần, gọi skill ui-ux-pro-max + frontend-design + humanizer.</li>
+          <li>Chỉnh màu, bố cục bằng 2–3 câu yêu cầu.</li>
+          <li>Lưu 1 file HTML, mở thử trên điện thoại rồi chia sẻ.</li>
+        </ol>
+      </div>
+    </div>
+    <p class="note ac-reveal" style="--i:3">Mục tiêu không phải hoàn hảo, mà là tự tay đi hết một vòng. Vướng đâu cứ gọi — 10 phút cuối mỗi người trình bày nhanh.</p>
+  </div></div>
+</section>
+
+<!-- ===== SLIDE 13 — TỔNG KẾT & Q&A BUỔI 1 ===== -->
+<section class="slide" data-chapter="1">
+  <div class="slide__bg" style="--bg:url('assets/bg3.jpg')"></div>
+  <div class="amb"><span class="o1"></span><span class="o2"></span></div>
+  <div class="slide-content"><div class="wrap">
+    <div class="head-center">
+      <div class="eyebrow ac-reveal" style="--i:0">Khép lại buổi 1</div>
+      <h2 class="s-title s-title--sm ac-reveal" style="--i:1">Tổng kết &amp; hỏi đáp</h2>
+    </div>
+    <div class="qa">
+      <div class="qa__take">
+        <div class="qa__item ac-reveal ac-reveal--left" style="--i:2"><div class="qic ic--blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12l5 5L20 7"/></svg></div><div><h4>Công cụ trong tầm tay</h4><p>Mô tả cho Claude, nhận về một file HTML chạy mọi nơi. Không cần biết code.</p></div></div>
+        <div class="qa__item ac-reveal ac-reveal--left" style="--i:3"><div class="qic ic--green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h10M4 17h7"/></svg></div><div><h4>Nội dung &amp; prompt là của mình</h4><p>Outline đúng, prompt rõ 5 phần, gọi skill thiết kế. Phần hồn vẫn do người quyết.</p></div></div>
+        <div class="qa__avoid ac-reveal ac-reveal--left" style="--i:4"><b>Tránh:</b> prompt mơ hồ ("làm slide đẹp") và bỏ bước outline — hai lỗi làm mất giờ nhất.</div>
+      </div>
+      <div class="qa__panel ac-reveal ac-reveal--right" style="--i:3">
+        <span class="ring"></span><span class="q">?</span>
+        <div class="big">HỎI ĐÁP</div>
+        <div class="sub">Câu hỏi nào về làm slide, cứ nêu — kể cả ngoài lề.</div>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ===== SLIDE 14 — BUỔI 2 DIVIDER ===== -->
+<section class="slide" data-chapter="2">
+  <div class="slide__bg" style="--bg:url('assets/bg1.jpg')"></div>
+  <div class="amb"><span class="o1"></span><span class="o2"></span></div>
+  <div class="slide-content"><div class="wrap">
+    <div class="divider">
+      <div class="orbit ac-pop" style="--i:0">
+        <div class="orbit__ring"><span class="orbit__sat" style="background:var(--pvep-green);box-shadow:0 0 0 5px rgba(0,176,80,.2)"></span></div>
+        <div class="orbit__ring r2"><span class="orbit__sat"></span></div>
+        <div class="orbit__ring r3"></div>
+        <div class="orbit__no">02</div>
+      </div>
+      <div class="chip chip--green ac-reveal" style="--i:1">BUỔI 2 · NGÀY 27/6 · 8h30–11h</div>
+      <div class="divider__t ac-reveal" style="--i:2">Cách xây dựng một bảng RACI số<br>trên nền tảng HTML</div>
+      <p class="divider__d ac-reveal" style="--i:3">Áp dụng cho bất kỳ quy trình nào của phòng/ban bạn — không riêng PVEP. Ba bước, đều có thể thao tác trực tiếp ngay tại lớp.</p>
+    </div>
+  </div></div>
+</section>
+
+<!-- ===== SLIDE 15 — RACI 2 GÓC NHÌN ===== -->
+<section class="slide" data-chapter="2">
+  <div class="slide__bg slide__bg--alt" style="--bg:url('assets/bg2.jpg')"></div>
+  <div class="amb"><span class="o1"></span><span class="o2"></span></div>
+  <div class="slide-content"><div class="wrap">
+    <div class="head-center">
+      <div class="eyebrow ac-reveal" style="--i:0">Nhắc lại cho đồng nhịp</div>
+      <h2 class="s-title ac-reveal" style="--i:1">RACI dưới <span class="neo">hai góc nhìn</span></h2>
+    </div>
+    <div class="grid2">
+      <div class="card2 ac-reveal ac-reveal--left" style="--i:2">
+        <div class="ic ic--blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="18" cy="8" r="2.4"/></svg></div>
+        <h4>Góc quen thuộc — phân công</h4>
+        <p><b>R</b> làm · <b>A</b> chịu trách nhiệm cuối · <b>C</b> được hỏi ý kiến · <b>I</b> được thông báo. Ai làm việc gì, đến cấp nào.</p>
+      </div>
+      <div class="card2 ac-reveal ac-reveal--right" style="--i:3">
+        <div class="ic ic--green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3l8 4v6c0 4-3.5 7-8 8-4.5-1-8-4-8-8V7z"/><path d="M9 12l2 2 4-4"/></svg></div>
+        <h4>Góc kiểm soát — thẩm quyền</h4>
+        <p>RACI gắn với <b>văn bản &amp; cấp phê duyệt</b>. Thành công cụ soi: thiếu kiểm soát ở đâu, chồng chéo thẩm quyền chỗ nào.</p>
+      </div>
+    </div>
+    <p class="note ac-reveal" style="--i:4">Bài này hướng dẫn <b>cách tự xây một bảng RACI số</b> cho quy trình của bạn. Ví dụ minh họa dùng ma trận thẩm quyền dầu khí, nhưng cách làm áp dụng cho mọi lĩnh vực.</p>
+  </div></div>
+</section>
+
+<!-- ===== SLIDE 16 — BƯỚC 1 EXCEL (THAO TÁC TRỰC TIẾP) ===== -->
+<section class="slide" data-chapter="2">
+  <div class="slide__bg" style="--bg:url('assets/bg3.jpg')"></div>
+  <div class="amb"><span class="o1"></span><span class="o2"></span></div>
+  <div class="slide-content"><div class="wrap wrap--wide">
+    <div class="head-center">
+      <div class="eyebrow ac-reveal" style="--i:0">Bước 1 — Thao tác trực tiếp trên Excel thật</div>
+      <h2 class="s-title s-title--sm ac-reveal" style="--i:1">Chuẩn hóa dữ liệu: <span class="neo">1 hàng = 1 đầu việc</span></h2>
+    </div>
+    <div class="xlwin ac-reveal ac-reveal--up" style="--i:2">
+      <div class="xlbar"><span class="xi" style="background:#ff5f57"></span><span class="xi" style="background:#febc2e"></span><span class="xi" style="background:#28c840"></span><span class="xlname"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M4 4h16v16H4z" opacity=".15"/><path d="M8 7l3 5-3 5h2.2l1.9-3.4L14 17h2.2l-3-5 3-5H14l-1.9 3.4L10.2 7z"/></svg>RACI_Data.xlsx — sheet "Ma trận thẩm quyền"</span></div>
+      <div class="xltools">
+        <div class="xltabs"><span class="xltab on">Ma trận thẩm quyền</span><span class="xltab">FACT RAM</span><span class="xltab">DIM_TASK</span></div>
+        <input id="xlq" type="text" autocomplete="off" spellcheck="false" placeholder="🔎 Lọc theo nội dung công việc… (vd: nhà thầu, chuyển nhượng, FDP)">
+        <span class="xlcount" id="xlcount"></span>
+      </div>
+      <div class="xlgrid" id="xlgrid"></div>
+      <div class="xlhint">Đọc theo hàng để thấy <b>ai làm gì, đến cấp nào</b>. Cuộn ngang xem hết các cấp · cuộn dọc xem 157 đầu việc · gõ ô lọc để tìm nhanh.</div>
+    </div>
+    <p class="note ac-reveal" style="--i:3">Đây là file Excel thật, mở ngay trên slide. Bí quyết: mỗi <b>hàng một đầu việc</b>, mỗi <b>cột một chủ thể/cấp</b>. Dữ liệu sạch thì bước sau mới chạy đúng.</p>
+  </div></div>
+</section>
+
+<!-- ===== SLIDE 17 — BƯỚC 2 COWORK ===== -->
+<section class="slide" data-chapter="2">
+  <div class="slide__bg slide__bg--alt" style="--bg:url('assets/bg5.jpg')"></div>
+  <div class="amb"><span class="o1"></span><span class="o2"></span></div>
+  <div class="slide-content"><div class="wrap wrap--wide">
+    <div class="head-center">
+      <div class="eyebrow ac-reveal" style="--i:0">Bước 2 — Tự động hóa phần khó</div>
+      <h2 class="s-title s-title--sm ac-reveal" style="--i:1">Claude Cowork tổng hợp <span class="neo">căn cứ &amp; phân vai</span></h2>
+    </div>
+    <div class="cw">
+      <div class="cwcol ac-reveal ac-reveal--left" style="--i:2">
+        <div class="cwcap"><b>1</b> Nạp dữ liệu</div>
+        <div class="cwfile"><span>📊 RACI_Data.xlsx</span><span style="color:var(--ink-500)">157 dòng</span></div>
+        <div class="cwdocs"><span class="cwdoc">Văn bản quy định</span><span class="cwdoc">Quy chế nội bộ</span><span class="cwdoc">Quy trình</span></div>
+      </div>
+      <div class="cwlink ac-reveal" style="--i:3">⟶<span class="pkt"></span></div>
+      <div class="cwcol cwengine ac-reveal ac-reveal--zoom" style="--i:4">
+        <div class="cwcap"><b>2</b> Cowork xử lý</div>
+        <div class="cwbrain"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1.6l1.9 7.3 7.1-2-5.2 5.1 5.2 5.1-7.1-2L12 22.4l-1.9-7.3-7.1 2 5.2-5.1L3 6.9l7.1 2z"/></svg></div>
+        <div class="cwstat">Gợi ý phân vai R/C/A/I &amp; căn cứ</div>
+      </div>
+      <div class="cwlink ac-reveal" style="--i:5">⟶<span class="pkt" style="animation-delay:.8s"></span></div>
+      <div class="cwcol ac-reveal ac-reveal--right" style="--i:6">
+        <div class="cwcap"><b>3</b> Nhận bản nháp</div>
+        <table class="cwt">
+          <thead><tr><th>Việc</th><th>Căn cứ / phân vai</th></tr></thead>
+          <tbody>
+            <tr><td class="ct">Chuyển nhượng quyền lợi</td><td class="cc">Luật DK Đ.36 · A: TTgCP</td></tr>
+            <tr><td class="ct">Danh mục lô dầu khí</td><td class="cc">Luật DK Đ.7 · R: PVN</td></tr>
+            <tr><td class="ct">Lựa chọn nhà thầu</td><td class="cc">Luật Đấu thầu · C: PVN</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <p class="note ac-reveal" style="--i:7">Việc đối chiếu hàng trăm đầu việc với nhiều văn bản, làm tay mất nhiều ngày. Cowork ra <b>bản nháp trong vài phút</b> — nhưng vẫn chỉ là bản nháp.</p>
+  </div></div>
+</section>
+
+<!-- ===== SLIDE 18 — PHANH ===== -->
+<section class="slide" data-chapter="2">
+  <div class="slide__bg" style="--bg:url('assets/bg4.jpg')"></div>
+  <div class="amb"><span class="o1"></span><span class="o2"></span></div>
+  <div class="slide-content"><div class="wrap">
+    <div class="head-center">
+      <div class="eyebrow ac-reveal" style="--i:0">Góc nhìn kiểm soát · bắt buộc</div>
+      <h2 class="s-title ac-reveal" style="--i:1">Hai cái <span class="neo">phanh</span> không được bỏ</h2>
+    </div>
+    <div class="brakes">
+      <div class="brake brake--sec ac-reveal ac-reveal--up" style="--i:2">
+        <div class="brake__ic ac-pulse">🔒</div>
+        <div><h4>Phanh bảo mật</h4><p>Chỉ đưa văn bản công khai cho AI. Không đưa văn bản phân cấp nội bộ, hợp đồng, số liệu nhạy cảm lên công cụ công khai.</p></div>
+      </div>
+      <div class="brake brake--ctrl ac-reveal ac-reveal--up" style="--i:3">
+        <div class="brake__ic ac-pulse">✓</div>
+        <div><h4>Phanh kiểm soát</h4><p>Output của AI là bản nháp khoảng 70%, không phải kết luận. Người có thẩm quyền phải đối chiếu lại điều khoản gốc trước khi dùng.</p></div>
+      </div>
+    </div>
+    <p class="note ac-reveal" style="--i:4">Đây là phần Ban KSNB nhấn mạnh: AI rút ngắn thời gian, <b>không chuyển giao trách nhiệm</b>. Sai sót vẫn thuộc người ký.</p>
+  </div></div>
+</section>
+
+<!-- ===== SLIDE 19 — BƯỚC 3 DASHBOARD EMBED ===== -->
+<section class="slide" data-chapter="2">
+  <div class="slide__bg slide__bg--alt" style="--bg:url('assets/bg2.jpg')"></div>
+  <div class="amb"><span class="o1"></span><span class="o2"></span></div>
+  <div class="slide-content"><div class="wrap wrap--wide">
+    <div class="head-center">
+      <div class="eyebrow ac-reveal" style="--i:0">Bước 3 — Sản phẩm thật, nhúng trực tiếp</div>
+      <h2 class="s-title s-title--sm ac-reveal" style="--i:1">Bảng RACI số trên HTML — <span class="neo">tra cứu thẩm quyền</span></h2>
+    </div>
+    <div class="dashwrap ac-reveal ac-reveal--up" style="--i:2">
+      <div class="dashbar"><i style="background:#ff5f57"></i><i style="background:#febc2e"></i><i style="background:#28c840"></i><small>Dashboard_Tham_Quyen_PVEP.html — chạy ngay trong slide, không cần internet</small><a class="open" href="assets/Dashboard_Tham_Quyen_PVEP.html" target="_blank" rel="noopener">Mở toàn màn hình ↗</a></div>
+      <div class="dashframe"><iframe src="assets/Dashboard_Tham_Quyen_PVEP.html" title="Bảng tra cứu thẩm quyền RACI" loading="lazy"></iframe></div>
+    </div>
+    <p class="note ac-reveal" style="--i:3">Đây là file HTML đã build sẵn, nhúng thẳng vào slide để thao tác thật. Gửi email là cả nhóm dùng được — không cài đặt, không license.</p>
+  </div></div>
+</section>
+
+<!-- ===== SLIDE 20 — HÀNH TRÌNH 5 BƯỚC ===== -->
+<section class="slide" data-chapter="2">
+  <div class="slide__bg" style="--bg:url('assets/bg1.jpg')"></div>
+  <div class="amb"><span class="o1"></span><span class="o2"></span></div>
+  <div class="slide-content"><div class="wrap">
+    <div class="head-center">
+      <div class="eyebrow ac-reveal" style="--i:0">Tóm lại cách làm — áp dụng cho mọi quy trình</div>
+      <h2 class="s-title ac-reveal" style="--i:1">Xây bảng RACI số trong <span class="neo-g">5 bước</span></h2>
+    </div>
+    <div class="steps5">
+      <div class="s5-track"><span class="s5-fill ac-fill-x" style="--w:100%"></span></div>
+      <div class="s5">
+        <div class="s5__step ac-pop" style="--i:2"><b>1</b><span>Liệt kê quy trình &amp; đầu việc</span></div>
+        <div class="s5__step ac-pop" style="--i:3"><b>2</b><span>Chuẩn hóa RACI trên Excel</span></div>
+        <div class="s5__step ac-pop" style="--i:4"><b>3</b><span>Cowork gợi ý phân vai &amp; căn cứ</span></div>
+        <div class="s5__step ac-pop" style="--i:5"><b>4</b><span>Người có thẩm quyền soát lại</span></div>
+        <div class="s5__step s5__step--hot ac-pop" style="--i:6"><b>5</b><span>Xuất 1 file HTML tra cứu</span></div>
+      </div>
+    </div>
+    <div class="grid3" style="margin-top:1.2rem">
+      <div class="card2 ac-reveal ac-reveal--up" style="--i:7"><h4>Bắt đầu nhỏ</h4><p>Chọn một quy trình mình rành nhất, làm cho xong rồi nhân rộng.</p></div>
+      <div class="card2 ac-reveal ac-reveal--up" style="--i:8"><h4>Tra cứu nhanh</h4><p>Ai làm gì, trình ai duyệt — ra kết quả trong vài giây trên trình duyệt.</p></div>
+      <div class="card2 ac-reveal ac-reveal--up" style="--i:9"><h4>Onboarding</h4><p>Nhân sự mới tự tra trách nhiệm, không phải hỏi vòng quanh.</p></div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ===== SLIDE 21 — THỰC HÀNH BUỔI 2 ===== -->
+<section class="slide" data-chapter="2">
+  <div class="slide__bg slide__bg--alt" style="--bg:url('assets/bg4.jpg')"></div>
+  <div class="amb"><span class="o1"></span><span class="o2"></span></div>
+  <div class="slide-content"><div class="wrap">
+    <div class="head-center">
+      <div class="eyebrow ac-reveal" style="--i:0">Thực hành buổi 2 · 35 phút</div>
+      <h2 class="s-title ac-reveal" style="--i:1">Tự xây một <span class="neo">RACI lookup nhỏ</span></h2>
+    </div>
+    <div class="lab" style="grid-template-columns:1fr">
+      <div class="labc labc--b ac-reveal ac-reveal--up" style="--i:2; max-width:760px; margin-inline:auto">
+        <span class="labc__tag">LÀM THEO 5 BƯỚC</span>
+        <h4>Bảng RACI số cho quy trình của bạn</h4>
+        <ol>
+          <li>Chọn một quy trình của phòng (vd: duyệt mua sắm, phê duyệt hồ sơ).</li>
+          <li>Lập 8–10 đầu việc trên Excel: 1 hàng = 1 việc, các cột là chủ thể.</li>
+          <li>Đưa file vào Cowork, nhờ gợi ý phân vai R/C/A/I và căn cứ.</li>
+          <li>Soát lại bản nháp, sửa cho đúng thẩm quyền thật.</li>
+          <li>Yêu cầu xuất 1 trang HTML có ô tra cứu, mở thử như slide trước.</li>
+        </ol>
+      </div>
+    </div>
+    <p class="note ac-reveal" style="--i:3">Nhớ hai phanh: không đưa dữ liệu nhạy cảm lên công cụ công khai, và đối chiếu lại căn cứ gốc trước khi dùng.</p>
+  </div></div>
+</section>
+
+<!-- ===== SLIDE 22 — TỔNG KẾT & Q&A BUỔI 2 ===== -->
+<section class="slide" data-chapter="2">
+  <div class="slide__bg" style="--bg:url('assets/bg3.jpg')"></div>
+  <div class="amb"><span class="o1"></span><span class="o2"></span></div>
+  <div class="slide-content"><div class="wrap">
+    <div class="head-center">
+      <div class="eyebrow ac-reveal" style="--i:0">Khép lại buổi 2</div>
+      <h2 class="s-title s-title--sm ac-reveal" style="--i:1">Tổng kết &amp; hỏi đáp</h2>
+    </div>
+    <div class="qa">
+      <div class="qa__take">
+        <div class="qa__item ac-reveal ac-reveal--left" style="--i:2"><div class="qic ic--blue"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 7h18v12H3z"/><path d="M3 7l3-4h12l3 4"/></svg></div><div><h4>Excel → HTML cho mọi quy trình</h4><p>Cùng 3 bước: chuẩn hóa Excel, Cowork gợi ý, xuất file tra cứu. Không riêng PVEP.</p></div></div>
+        <div class="qa__item ac-reveal ac-reveal--left" style="--i:3"><div class="qic ic--green"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 3l8 4v6c0 4-3.5 7-8 8-4.5-1-8-4-8-8V7z"/><path d="M9 12l2 2 4-4"/></svg></div><div><h4>Phanh kiểm soát luôn bật</h4><p>AI lo phần nháp, người lo phần đúng. Bảo mật dữ liệu và đối chiếu căn cứ gốc.</p></div></div>
+        <div class="qa__avoid ac-reveal ac-reveal--left" style="--i:4"><b>Tránh:</b> đưa dữ liệu nhạy cảm lên công cụ công khai và tin bản nháp 100% — hai lỗi nghiêm trọng về kiểm soát.</div>
+      </div>
+      <div class="qa__panel ac-reveal ac-reveal--right" style="--i:3">
+        <span class="ring"></span><span class="q">?</span>
+        <div class="big">HỎI ĐÁP</div>
+        <div class="sub">Câu hỏi nào về RACI số hóa, cứ nêu — kể cả ngoài lề.</div>
+      </div>
+    </div>
+  </div></div>
+</section>
+
+<!-- ===== SLIDE 23 — CẢM ƠN ===== -->
+<section class="slide slide--dark" data-chapter="2">
+  <div class="slide__video"><video autoplay muted loop playsinline preload="auto"><source src="assets/offshore-motion.mp4" type="video/mp4"></video></div>
+  <div class="amb"><span class="o1"></span><span class="o2"></span></div>
+  <div class="slide-content"><div class="wrap">
+    <div class="end">
+      <p class="end__lead ac-reveal" style="--i:0">Slide HTML và RACI số hóa <b>không phải chuyện kỹ thuật.</b></p>
+      <p class="end__lead ac-reveal" style="--i:1">Đó là cách <span class="neo">quản trị · kiểm soát · chia sẻ tri thức</span> hiệu quả hơn.</p>
+      <h2 class="end__big ac-reveal" style="--i:2">CẢM ƠN &amp; CHÚC THỰC HÀNH TỐT</h2>
+      <div class="end__thanks ac-reveal" style="--i:3">Đoàn Thái Việt · Ban KSNB PVEP · Petrovietnam-NEXT 2025</div>
+    </div>
+  </div></div>
+</section>
+
+<script>
+(function () {
+  "use strict";
+  var VISIBLE_RATIO = 0.55;
+  var reduceMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  function easeOutCubic(t){ return 1 - Math.pow(1 - t, 3); }
+  function fmt(v){ return Math.round(v).toLocaleString("vi-VN"); }
+  function runCount(el){
+    var to = parseFloat(el.getAttribute("data-count-to")); if (isNaN(to)) return;
+    var dur = parseFloat(el.getAttribute("data-count-dur")) || 1400;
+    if (reduceMotion){ el.textContent = fmt(to); return; }
+    var start = null; if (el._raf) cancelAnimationFrame(el._raf);
+    function step(ts){ if (start===null) start=ts; var p=Math.min((ts-start)/dur,1);
+      el.textContent = fmt(to*easeOutCubic(p)); if(p<1) el._raf=requestAnimationFrame(step); }
+    el._raf = requestAnimationFrame(step);
+  }
+  function resetCount(el){ if(el._raf) cancelAnimationFrame(el._raf); el.textContent = "0"; }
+  function activate(s){ if(s.classList.contains("ac-on")) return; s.classList.add("ac-on");
+    var n=s.querySelectorAll("[data-count-to]"); for(var i=0;i<n.length;i++) runCount(n[i]); }
+  function deactivate(s){ s.classList.remove("ac-on");
+    var n=s.querySelectorAll("[data-count-to]"); for(var i=0;i<n.length;i++) resetCount(n[i]); }
+  function init(){
+    var slides=document.querySelectorAll(".slide"); if(!slides.length) return;
+    var all=document.querySelectorAll("[data-count-to]"); for(var n=0;n<all.length;n++) resetCount(all[n]);
+    if(!("IntersectionObserver" in window)){ for(var k=0;k<slides.length;k++) activate(slides[k]); return; }
+    var io=new IntersectionObserver(function(es){ es.forEach(function(e){
+      if(e.isIntersecting && e.intersectionRatio>=VISIBLE_RATIO) activate(e.target); else deactivate(e.target); });
+    },{threshold:[0,VISIBLE_RATIO,1]});
+    for(var s=0;s<slides.length;s++) io.observe(slides[s]);
+  }
+  if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", init); else init();
+})();
+
+(function(){
+  var slides = Array.prototype.slice.call(document.querySelectorAll(".slide"));
+  var total = slides.length;
+  var railItems = Array.prototype.slice.call(document.querySelectorAll(".rail__item"));
+  var curEl=document.getElementById("cur"), totEl=document.getElementById("tot"), fill=document.getElementById("progressFill");
+  var current=0; totEl.textContent=total;
+  function setCurrent(i){
+    current=Math.max(0,Math.min(total-1,i));
+    curEl.textContent=current+1;
+    fill.style.width=((current+1)/total*100)+"%";
+    var ch=slides[current].getAttribute("data-chapter");
+    railItems.forEach(function(el){ el.classList.toggle("is-active", el.getAttribute("data-chapter")===ch); });
+    document.body.classList.toggle("on-dark", slides[current].classList.contains("slide--dark"));
+  }
+  function goTo(i){ var t=Math.max(0,Math.min(total-1,i)); slides[t].scrollIntoView({behavior:"smooth",block:"start"}); setCurrent(t); }
+  var io2=new IntersectionObserver(function(es){ es.forEach(function(e){
+    if(e.isIntersecting && e.intersectionRatio>=0.55){ var idx=slides.indexOf(e.target); if(idx>=0) setCurrent(idx); } });
+  },{threshold:[0.55]});
+  slides.forEach(function(s){ io2.observe(s); });
+  document.addEventListener("keydown", function(e){
+    var t=e.target; if(t && (t.tagName==="INPUT"||t.tagName==="TEXTAREA")) return;
+    if(["ArrowRight","ArrowDown","PageDown"," "].indexOf(e.key)!==-1){ e.preventDefault(); goTo(current+1); }
+    else if(["ArrowLeft","ArrowUp","PageUp"].indexOf(e.key)!==-1){ e.preventDefault(); goTo(current-1); }
+    else if(e.key==="Home"){ e.preventDefault(); goTo(0); }
+    else if(e.key==="End"){ e.preventDefault(); goTo(total-1); }
+  });
+  railItems.forEach(function(el){ el.addEventListener("click", function(){ goTo(parseInt(el.getAttribute("data-target"),10)); }); });
+  (function(){
+    var sx=0,sy=0,tracking=false,cooldown=0,THRESH=45;
+    document.addEventListener("touchstart",function(e){ if(e.touches.length!==1){tracking=false;return;} sx=e.touches[0].clientX; sy=e.touches[0].clientY; tracking=true; },{passive:true});
+    document.addEventListener("touchend",function(e){ if(!tracking) return; tracking=false; if(Date.now()<cooldown) return;
+      var t=e.changedTouches[0], dx=t.clientX-sx, dy=t.clientY-sy;
+      if(Math.abs(dx)>Math.abs(dy) && Math.abs(dx)>THRESH){ cooldown=Date.now()+450; goTo(dx<0?current+1:current-1); }
+    },{passive:true});
+  })();
+  setCurrent(0);
+})();
+
+/* ===== Interactive Excel grid (real RACI_Data) ===== */
+(function(){
+  var G = window.RACI_GRID; var host=document.getElementById("xlgrid");
+  if(!G || !host) return;
+  function norm(s){ return (s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/đ/g,"d"); }
+  function cls(v){
+    var n=norm(v);
+    if(!n) return "";
+    if(n.indexOf("xuat")>=0 || n.indexOf("hien")>=0) return "xv-r";
+    if(n.indexOf("dinh")>=0 || n.indexOf("xet")>=0) return "xv-c";
+    if(n.indexOf("duyet")>=0) return n.indexOf("cap")>=0 ? "xv-p" : "xv-a";
+    if(n.indexOf("qua")>=0 || n.indexOf("gia")>=0) return "xv-i";
+    return "xv-i";
+  }
+  var ents = G.headers.slice(2); // 13 entity columns
+  var html = '<table class="xl"><thead>';
+  html += '<tr class="grprow"><th class="xlstt" rowspan="2">STT</th><th class="xlname" rowspan="2">NỘI DUNG CÔNG VIỆC</th><th colspan="7">CẤP XỬ LÝ THEO PHÁP LUẬT</th><th class="g2" colspan="6">THEO QUY ĐỊNH NỘI BỘ</th></tr>';
+  html += '<tr class="colrow">';
+  for(var c=0;c<ents.length;c++) html += '<th>'+ents[c]+'</th>';
+  html += '</tr></thead><tbody>';
+  for(var r=0;r<G.rows.length;r++){
+    var row=G.rows[r];
+    html += '<tr class="'+(row.cat?"cat":"")+'" data-s="'+norm(row.stt+" "+row.name)+'">';
+    html += '<td class="xlstt">'+row.stt+'</td><td class="xlname">'+row.name+'</td>';
+    for(var a=0;a<ents.length;a++){
+      var v=row.auth[a]||"";
+      html += '<td class="v">'+(v?'<span class="xv '+cls(v)+'">'+v+'</span>':'')+'</td>';
+    }
+    html += '</tr>';
+  }
+  html += '</tbody></table>';
+  host.innerHTML = html;
+  var trs = host.querySelectorAll("tbody tr");
+  var input=document.getElementById("xlq"), cnt=document.getElementById("xlcount");
+  function update(q){
+    q=norm(q).trim(); var shown=0, totalTasks=0;
+    for(var i=0;i<trs.length;i++){
+      var tr=trs[i], isCat=tr.classList.contains("cat");
+      if(!isCat) totalTasks++;
+      if(q===""){ tr.style.display=""; if(!isCat) shown++; }
+      else if(isCat){ tr.style.display="none"; }
+      else { var ok=tr.getAttribute("data-s").indexOf(q)>=0; tr.style.display=ok?"":"none"; if(ok) shown++; }
+    }
+    if(cnt) cnt.textContent = (q==="" ? totalTasks : shown+" / "+totalTasks) + " đầu việc";
+  }
+  update("");
+  if(input){ input.addEventListener("input", function(){ update(input.value); }); }
+})();
+</script>
+</body>
+</html>
