@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="robots" content="noindex, nofollow" />
+<title>Tra cứu thẩm quyền — bản minh hoạ</title>
+<style>
+:root{--navy:#0A2A4A;--blue:#0083C7;--green:#00B050;--ink:#1E293B;--muted:#64748B;--line:#E2E8F0;--bg:#F1F5F9}
+*{box-sizing:border-box}
+body{margin:0;font:15px/1.5 "Segoe UI",system-ui,sans-serif;color:var(--ink);background:var(--bg)}
+header{background:var(--navy);color:#fff;padding:16px 20px}
+header h1{margin:0;font-size:18px;font-weight:700}
+header p{margin:4px 0 0;font-size:13px;opacity:.8}
+.tools{display:flex;gap:10px;flex-wrap:wrap;align-items:center;padding:12px 20px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:5}
+.tools input,.tools select{padding:8px 12px;border:1px solid var(--line);border-radius:8px;font:inherit;background:#fff}
+.tools input{flex:1;min-width:220px}
+.count{font-size:13px;color:var(--muted);white-space:nowrap}
+.wrap{overflow:auto;max-height:calc(100vh - 118px)}
+table{border-collapse:collapse;width:100%;background:#fff;font-size:13px}
+th,td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top}
+thead th{position:sticky;top:0;background:var(--navy);color:#fff;font-weight:600;z-index:2}
+thead th:first-child,thead th:nth-child(2){z-index:3}
+tbody tr:nth-child(even){background:#FAFBFC}
+tr.cat td{background:#E8F1F8;font-weight:700}
+td.stt{width:58px;color:var(--muted);white-space:nowrap}
+td.name{min-width:320px}
+td.v{text-align:center;white-space:nowrap}
+.tag{display:inline-block;padding:2px 7px;border-radius:999px;font-size:11px;font-weight:600}
+.r{background:#E0F2FE;color:#075985}.c{background:#FEF3C7;color:#92400E}
+.a{background:#DCFCE7;color:#166534}.i{background:#EDE9FE;color:#5B21B6}
+footer{padding:10px 20px;font-size:12px;color:var(--muted);background:#fff;border-top:1px solid var(--line)}
+</style>
+</head>
+<body>
+<header>
+  <h1>Tra cứu thẩm quyền hoạt động dầu khí</h1>
+  <p>Bản minh hoạ cho bài giảng — dữ liệu trích từ văn bản pháp luật công khai</p>
+</header>
+<div class="tools">
+  <input id="q" type="text" placeholder="🔎 Gõ để tìm: nhà thầu, chuyển nhượng, FDP, thu dọn…" autocomplete="off" spellcheck="false">
+  <select id="org"><option value="">Tất cả chủ thể</option></select>
+  <span class="count" id="count"></span>
+</div>
+<div class="wrap"><table id="tb"><thead></thead><tbody></tbody></table></div>
+<footer>Nguồn: Luật Dầu khí 12/2022 và các Nghị định hướng dẫn. Bản này không chứa phân cấp thẩm quyền nội bộ của doanh nghiệp. Kết quả tra cứu chỉ để tham khảo, phải đối chiếu điều khoản gốc trước khi sử dụng.</footer>
+<script src="raci-grid.js"></script>
+<script>
+(function(){
+  var G=window.RACI_GRID, ents=G.headers.slice(2);
+  var tb=document.getElementById("tb"), q=document.getElementById("q"),
+      org=document.getElementById("org"), cnt=document.getElementById("count");
+  function norm(s){return (s||"").toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g,"").replace(/đ/g,"d");}
+  function cls(v){var n=norm(v);
+    if(n.indexOf("xuat")>=0||n.indexOf("hien")>=0)return"r";
+    if(n.indexOf("dinh")>=0||n.indexOf("xet")>=0)return"c";
+    if(n.indexOf("duyet")>=0)return"a";return"i";}
+  var th="<tr><th>STT</th><th>NỘI DUNG CÔNG VIỆC</th>";
+  for(var i=0;i<ents.length;i++){th+="<th>"+ents[i]+"</th>";
+    org.insertAdjacentHTML("beforeend","<option value='"+i+"'>"+ents[i]+"</option>");}
+  tb.tHead.innerHTML=th+"</tr>";
+  var body="";
+  G.rows.forEach(function(r){
+    body+="<tr class='"+(r.cat?"cat":"")+"' data-s='"+norm(r.stt+" "+r.name)+"'>";
+    body+="<td class='stt'>"+r.stt+"</td><td class='name'>"+r.name+"</td>";
+    for(var a=0;a<ents.length;a++){var v=r.auth[a]||"";
+      body+="<td class='v' data-col='"+a+"'>"+(v?"<span class='tag "+cls(v)+"'>"+v+"</span>":"")+"</td>";}
+    body+="</tr>";
+  });
+  tb.tBodies[0].innerHTML=body;
+  var trs=tb.tBodies[0].rows;
+  function update(){
+    var k=norm(q.value).trim(), o=org.value, shown=0, total=0;
+    for(var i=0;i<trs.length;i++){
+      var tr=trs[i], isCat=tr.className==="cat";
+      if(!isCat) total++;
+      var ok=true;
+      if(k && tr.getAttribute("data-s").indexOf(k)<0) ok=false;
+      if(ok && o!==""){ var c=tr.cells[2+parseInt(o,10)]; if(!c||!c.textContent.trim()) ok=false; }
+      if(isCat) ok = (k==="" && o==="");
+      tr.style.display=ok?"":"none";
+      if(ok&&!isCat) shown++;
+    }
+    cnt.textContent=(k===""&&o===""?total:shown+" / "+total)+" đầu việc";
+  }
+  q.addEventListener("input",update); org.addEventListener("change",update); update();
+})();
+</script>
+</body>
+</html>
